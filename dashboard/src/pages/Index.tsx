@@ -189,7 +189,8 @@ const PostsList: React.FC<{ channel: ChannelType }> = ({ channel }) => {
   useEffect(() => {
     const fetchSources = async () => {
       const sources = await sourcesService.getAllSources(channel);
-      setUniqueSources(sources.map((s) => s.name).filter(Boolean));
+      // several sources share a display name; the filter matches by name, so list each once
+      setUniqueSources([...new Set(sources.map((s) => s.name).filter(Boolean))]);
     };
     fetchSources();
   }, [channel]);
@@ -345,7 +346,10 @@ const PostsList: React.FC<{ channel: ChannelType }> = ({ channel }) => {
                 <SelectValue placeholder="Nguồn đăng" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Tất cả nguồn ({uniqueSources.length})</SelectItem>
+                <div className="px-2 py-1.5 text-xs text-muted-foreground">
+                  {uniqueSources.length} nguồn
+                </div>
+                <SelectItem value="all">Tất cả nguồn</SelectItem>
                 {uniqueSources.map((source) => (
                   <SelectItem key={source} value={source}>
                     {source}

@@ -548,7 +548,7 @@ const server = http.createServer(async (req, res) => {
         conds.push(`(s.id = $1::uuid OR s.parent_id = $1::uuid OR LOWER(s.name) = 'facebook phản động')`);
       } else if (channel === 'ANTT') {
         params.push(PARENT_FB_PHANDONG);
-        conds.push(`NOT (s.id = $1::uuid OR COALESCE(s.parent_id::text, '') = $1 OR LOWER(s.name) = 'facebook phản động')`);
+        conds.push(`NOT (s.id = $1::uuid OR COALESCE(s.parent_id::text, '') = $1::text OR LOWER(s.name) = 'facebook phản động')`);
       }
       if (typeName) {
         params.push(typeName);
