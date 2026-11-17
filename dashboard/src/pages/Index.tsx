@@ -317,14 +317,14 @@ const PostsList: React.FC<{ channel: ChannelType }> = ({ channel }) => {
             />
           </div>
 
-          <div className="xl:col-span-2">
+          <div className="md:col-span-2 xl:col-span-5 flex items-center gap-2">
             <Select
               value={sentimentFilter}
               onValueChange={(value: string) =>
                 handleFilterChange(setSentimentFilter, value)
               }
             >
-              <SelectTrigger className="h-9 text-xs bg-background">
+              <SelectTrigger className="h-9 text-xs bg-background flex-1 min-w-0">
                 <SelectValue placeholder="Sắc thái" />
               </SelectTrigger>
               <SelectContent>
@@ -334,16 +334,14 @@ const PostsList: React.FC<{ channel: ChannelType }> = ({ channel }) => {
                 <SelectItem value="Tiêu cực">Tiêu cực</SelectItem>
               </SelectContent>
             </Select>
-          </div>
 
-          <div className="xl:col-span-3 flex items-center gap-2">
             <Select
               value={sourceFilter}
               onValueChange={(value: string) =>
                 handleFilterChange(setSourceFilter, value)
               }
             >
-              <SelectTrigger className="h-9 text-xs bg-background flex-1">
+              <SelectTrigger className="h-9 text-xs bg-background flex-1 min-w-0">
                 <SelectValue placeholder="Nguồn đăng" />
               </SelectTrigger>
               <SelectContent>
@@ -362,7 +360,7 @@ const PostsList: React.FC<{ channel: ChannelType }> = ({ channel }) => {
                 handleFilterChange(setTopicFilter, value)
               }
             >
-              <SelectTrigger className="h-9 text-xs bg-background flex-1">
+              <SelectTrigger className="h-9 text-xs bg-background flex-1 min-w-0">
                 <SelectValue placeholder="Chủ đề" />
               </SelectTrigger>
               <SelectContent>
