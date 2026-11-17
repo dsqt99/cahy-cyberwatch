@@ -268,7 +268,7 @@ const PostsList: React.FC<{ channel: ChannelType }> = ({ channel }) => {
       {/* Filter Command Toolbar */}
       <div className="surface-panel p-4 space-y-3">
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-12 gap-3">
-          <div className="relative xl:col-span-4">
+          <div className="relative xl:col-span-3">
             <Search
               className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"
               strokeWidth={1.75}
@@ -293,7 +293,7 @@ const PostsList: React.FC<{ channel: ChannelType }> = ({ channel }) => {
             )}
           </div>
 
-          <div className="flex items-center gap-1.5 xl:col-span-3">
+          <div className="flex items-center gap-1.5 xl:col-span-4">
             <Input
               type="date"
               value={startDateStr}
@@ -301,7 +301,7 @@ const PostsList: React.FC<{ channel: ChannelType }> = ({ channel }) => {
                 setStartDateStr(e.target.value);
                 setCurrentPage(1);
               }}
-              className="h-9 text-xs font-mono tabular-nums bg-background"
+              className="h-9 min-w-0 flex-1 text-xs font-mono tabular-nums bg-background"
               aria-label="Từ ngày"
             />
             <span className="text-muted-foreground text-xs shrink-0">đến</span>
@@ -312,7 +312,7 @@ const PostsList: React.FC<{ channel: ChannelType }> = ({ channel }) => {
                 setEndDateStr(e.target.value);
                 setCurrentPage(1);
               }}
-              className="h-9 text-xs font-mono tabular-nums bg-background"
+              className="h-9 min-w-0 flex-1 text-xs font-mono tabular-nums bg-background"
               aria-label="Đến ngày"
             />
           </div>
