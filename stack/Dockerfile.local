@@ -1,0 +1,25 @@
+FROM n8nio/n8n:latest
+
+USER root
+
+# Pre-install CAHY CyberWatch custom FoxProfile node + community nodes required by imported workflows
+RUN mkdir -p /opt/cahy-n8n-nodes
+COPY n8n-nodes-foxprofile-1.0.0.tgz /opt/cahy-n8n-nodes/n8n-nodes-foxprofile-1.0.0.tgz
+
+RUN cd /opt/cahy-n8n-nodes \
+  && npm init -y \
+  && npm install --omit=dev --legacy-peer-deps --ignore-scripts --no-package-lock --no-audit --no-fund \
+       ./n8n-nodes-foxprofile-1.0.0.tgz \
+       n8n-nodes-zalo-tools \
+       n8n-nodes-webpage-content-extractor \
+       n8n-nodes-social-facebook \
+       n8n-nodes-phoai-public-tools \
+  && node -e "const fs=require('fs'); for(const n of ['n8n-nodes-zalo-tools','n8n-nodes-social-facebook','n8n-nodes-phoai-public-tools']){const p='/opt/cahy-n8n-nodes/node_modules/'+n+'/package.json'; if(fs.existsSync(p)){const j=JSON.parse(fs.readFileSync(p,'utf8')); if(j.n8n) j.n8n.n8nNodesApiVersion=1; fs.writeFileSync(p,JSON.stringify(j,null,2));}}" \
+  && chown -R node:node /opt/cahy-n8n-nodes
+
+RUN printf '#!/bin/sh\nset -e\nmkdir -p /home/node/.n8n/nodes\ncp -f /opt/cahy-n8n-nodes/package.json /home/node/.n8n/nodes/package.json\nrm -rf /home/node/.n8n/nodes/node_modules\ncp -R /opt/cahy-n8n-nodes/node_modules /home/node/.n8n/nodes/node_modules\nexec /docker-entrypoint.sh "$@"\n' > /docker-entrypoint-cahy.sh \
+  && chmod +x /docker-entrypoint-cahy.sh
+
+USER node
+
+ENTRYPOINT ["/docker-entrypoint-cahy.sh"]

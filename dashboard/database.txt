@@ -1,0 +1,48 @@
+news [icon: newspaper, color: blue] {
+  id uuid pk
+  sourceId uuid
+  groupId uuid
+  content string
+  link string
+  publishDate timestamp
+  sentimentId uuid
+  summary string
+  keywords string
+  screenshot string
+  metadata jsonb
+  createdAt timestamp
+  updatedAt timestamp
+  deletedAt  timestamp
+}
+
+sources [] {
+  id uuid pk
+  name string
+  link string
+  pageId string
+  typeId uuid
+  parentId uuid
+  createdAt timestamp
+  updatedAt timestamp
+  deletedAt  timestamp
+}
+
+sentiments [] {
+  id uuid
+  name string
+  createdAt timestamp
+  updatedAt timestamp
+  deletedAt  timestamp
+}
+
+types [] {
+  id uuid
+  name string
+  createdAt timestamp
+  updatedAt timestamp
+  deletedAt  timestamp
+}
+
+news.sourceId > sources.id
+news.sentimentId > sentiments.id
+sources.typeId > types.id

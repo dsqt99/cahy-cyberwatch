@@ -1,0 +1,1295 @@
+{
+  "id": "qd3oBJpB7JuGG3vo",
+  "name": "Theo dõi tin tức Báo chí",
+  "description": null,
+  "active": false,
+  "activeVersionId": null,
+  "createdAt": "2026-11-03T03:09:48.772Z",
+  "updatedAt": "2026-11-03T07:42:13.163Z",
+  "isArchived": false,
+  "versionId": "6c7b38de-0fc5-482d-9a2f-629747befb84",
+  "versionCounter": 4,
+  "sourceWorkflowId": null,
+  "triggerCount": 1,
+  "nodes": [
+    {
+      "id": "ff63180a-f534-40ee-a891-4d42b46b83f9",
+      "name": "HTTP Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "alwaysOutputData": false,
+      "retryOnFail": true,
+      "onError": "continueErrorOutput",
+      "position": [
+        224,
+        1728
+      ],
+      "parameters": {
+        "url": "={{ $json.link }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-agent",
+              "value": "*"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "23de23ac-5914-4490-bdd4-e096a96a8c22",
+      "name": "XML",
+      "type": "n8n-nodes-base.xml",
+      "typeVersion": 1,
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput",
+      "position": [
+        976,
+        1632
+      ],
+      "parameters": {
+        "options": {}
+      }
+    },
+    {
+      "id": "f7ac4b13-7e9f-408e-b2b8-0230a7f1addf",
+      "name": "HTTP Request1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "alwaysOutputData": false,
+      "retryOnFail": true,
+      "onError": "continueErrorOutput",
+      "position": [
+        752,
+        1648
+      ],
+      "parameters": {
+        "url": "={{ $('URL Tracking').item.json.link }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-agent",
+              "value": "*"
+            },
+            {
+              "name": "cookie",
+              "value": "=D1N=5f3b2bf718ee7b818379aba5be857df5"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "6a49c6e8-559c-4665-b1c2-f115151ec896",
+      "name": "HTTP Request4",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput",
+      "position": [
+        1120,
+        1264
+      ],
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-agent",
+              "value": "*"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "1b3ad3ac-2585-44ea-b25e-427267809f40",
+      "name": "WebpageContentExtractor",
+      "type": "n8n-nodes-webpage-content-extractor.webpageContentExtractor",
+      "typeVersion": 1,
+      "executeOnce": false,
+      "alwaysOutputData": false,
+      "retryOnFail": true,
+      "onError": "continueRegularOutput",
+      "position": [
+        1408,
+        1168
+      ],
+      "parameters": {
+        "html": "={{ $json.data }}"
+      }
+    },
+    {
+      "id": "47ed50ce-d5ee-42c3-b8f1-44bbef785dc3",
+      "name": "XML1",
+      "type": "n8n-nodes-base.xml",
+      "typeVersion": 1,
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput",
+      "position": [
+        976,
+        1840
+      ],
+      "parameters": {
+        "options": {}
+      }
+    },
+    {
+      "id": "0ecd4720-b88d-4c6d-9f9f-f682476f0808",
+      "name": "URL Tracking",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "alwaysOutputData": false,
+      "onError": "continueRegularOutput",
+      "position": [
+        -48,
+        1504
+      ],
+      "parameters": {
+        "options": {
+          "reset": false
+        }
+      }
+    },
+    {
+      "id": "3635aa8f-c775-4f1f-b7e4-89dc0e172f53",
+      "name": "news URL",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "onError": "continueRegularOutput",
+      "position": [
+        320,
+        1216
+      ],
+      "parameters": {
+        "options": {}
+      }
+    },
+    {
+      "id": "32692fc9-29a2-4362-ba19-ec815945edf6",
+      "name": "check laodong",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        544,
+        1712
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "11891057-2487-4d70-8098-0ad6c152cdaa",
+              "leftValue": "={{ $('URL Tracking').item.json.link }}",
+              "rightValue": "laodong.vn",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "0ddac160-30fd-44a0-98ae-3dfdf9d73192",
+      "name": "Extract newspaper URL",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput",
+      "position": [
+        1184,
+        1632
+      ],
+      "parameters": {
+        "language": "python",
+        "pythonCode": "from dateutil import parser\nfrom datetime import datetime\n\ndata = []\nroot_url = _('URL Tracking').first().json.link\nkeywords = ['thaibinh', 'thai binh', 'thái bình', 'hưng yên', 'hung yen', 'hungyen']\nrow_now = datetime.now().strftime(\"%Y-%m-%d\")\n\nif 'sitemap' in root_url:\n  items = _input.first().json.urlset.url\n  for item in items:\n    title, description = '', ''\n    url = item.loc\n    try:\n      date = item.lastmod\n    except:\n      date = item['news:news']['news:publication_date']\n    if parser.parse(date).strftime(\"%Y-%m-%d\") != row_now or url.count('/') == 2:\n      continue\n    relevance = False\n    if 'news:news' in item:\n      title = item['news:news']['news:title']\n      description = item['news:news']['news:keywords']\n      for keyword in keywords:\n        if keyword in title.lower() and keyword in description.lower():\n          relevance = True\n    else:\n      relevance = True\n          \n    data.append({\n      'title': title,\n      'description': description,\n      'url': url,\n      'date': date,\n      'relevance': relevance,\n      'source_id': _('URL Tracking').first().json.id\n    })\n    \nelse:\n  items = _input.first().json.rss.channel.item\n  for item in items:\n    title = item.title\n    description = item.description\n    url = item.link\n    if url in _('Code2').first().json.urls:\n      continue\n    date = item.pubDate\n    if parser.parse(date).strftime(\"%Y-%m-%d\") != row_now or url.count('/') == 2:\n      continue\n    relevance = False\n    for keyword in keywords:\n      if keyword in title.lower() or keyword in description.lower():\n        relevance = True\n    data.append({\n      'title': title,\n      'description': description,\n      'url': url,\n      'date': date,\n      'relevance': relevance,\n      'source_id': _('URL Tracking').first().json.id\n    })\n\nreturn data"
+      }
+    },
+    {
+      "id": "c970ca84-a261-4fe2-82fd-27c9a6dd1b80",
+      "name": "Extract newspaper URL1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput",
+      "position": [
+        1184,
+        1840
+      ],
+      "parameters": {
+        "language": "python",
+        "pythonCode": "from dateutil import parser\nfrom datetime import datetime\n\ndata = []\nroot_url = _('URL Tracking').first().json.link\nkeywords = ['thaibinh', 'thai binh', 'thái bình', 'hưng yên', 'hung yen', 'hungyen']\nrow_now = datetime.now().strftime(\"%Y-%m-%d\")\n\nif 'sitemap' in root_url:\n  items = _input.first().json.urlset.url\n  for item in items:\n    title, description = '', ''\n    url = item.loc\n    try:\n      date = item.lastmod\n    except:\n      date = item['news:news']['news:publication_date']\n    if parser.parse(date).strftime(\"%Y-%m-%d\") != row_now or url.count('/') == 2:\n      continue\n    relevance = False\n    if 'news:news' in item:\n      title = item['news:news']['news:title']\n      description = item['news:news']['news:keywords']\n      for keyword in keywords:\n        if keyword in title.lower() and keyword in description.lower():\n          relevance = True\n    else:\n      relevance = True\n          \n    data.append({\n      'title': title,\n      'description': description,\n      'url': url,\n      'date': date,\n      'relevance': relevance,\n      'source_id': _('URL Tracking').first().json.id\n    })\n    \nelse:\n  items = _input.first().json.rss.channel.item\n  for item in items:\n    title = item.title\n    description = item.description\n    url = item.link\n    date = item.pubDate\n    if parser.parse(date).strftime(\"%Y-%m-%d\") != row_now or url.count('/') == 2:\n      continue\n    relevance = False\n    for keyword in keywords:\n      if keyword in title.lower() or keyword in description.lower():\n        relevance = True\n    data.append({\n      'title': title,\n      'description': description,\n      'url': url,\n      'date': date,\n      'relevance': relevance,\n      'source_id': _('URL Tracking').first().json.id\n    })\n\nreturn data"
+      }
+    },
+    {
+      "id": "24597090-6fad-48f7-b447-6a974834f406",
+      "name": "HTTP Request3",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "onError": "continueRegularOutput",
+      "position": [
+        1120,
+        1056
+      ],
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-agent",
+              "value": "*"
+            },
+            {
+              "name": "cookie",
+              "value": "=D1N=5f3b2bf718ee7b818379aba5be857df5"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "fd8a7047-40ab-4b9b-8934-5adc0f77a77e",
+      "name": "check laodong 1",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        864,
+        1184
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "11891057-2487-4d70-8098-0ad6c152cdaa",
+              "leftValue": "={{ $json.url }}",
+              "rightValue": "laodong.vn",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "946b59d0-8edc-4120-86dd-5a58fa5fe2bf",
+      "name": "Schedule hàng giờ",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -608,
+        1504
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 30
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "81a45adc-02cf-4bf0-bbd9-1bd47dbff94d",
+      "name": "check tracked url",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "alwaysOutputData": false,
+      "position": [
+        2864,
+        1136
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "18e456b5-d790-403e-a7c1-dad1da9a3317",
+              "leftValue": "={{ $json }}",
+              "rightValue": "=0",
+              "operator": {
+                "type": "object",
+                "operation": "empty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "57476fe2-cd95-4e81-b88b-84136df4e95e",
+      "name": "check thaibinh + hungyen 1",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        608,
+        1216
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "b9fdc79f-467c-45d3-af14-439bb5126170",
+              "leftValue": "={{ $json }}",
+              "rightValue": "",
+              "operator": {
+                "type": "object",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "abb552af-ac82-4e2c-bfd7-edd156f22425",
+              "leftValue": "={{ $('news URL').item.json.relevance }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "ba4e16e7-f226-43ad-a2db-30852534f82f",
+      "name": "check thaibinh + hungyen ",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1664,
+        1168
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "1023225e-a06e-474e-a43d-e18698f57081",
+              "leftValue": "={{ $json.textContent.trim().toLowerCase() }}",
+              "rightValue": "thái bình",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            },
+            {
+              "id": "b3a32edd-44dd-4111-b2b2-a82c6321b59a",
+              "leftValue": "={{ $json.textContent.trim().toLowerCase() }}",
+              "rightValue": "hưng yên",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "ee15da3c-58be-4b56-a1db-42e65ecc1e9b",
+      "name": "check thaibinh + hungyen 2",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2368,
+        1152
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "1023225e-a06e-474e-a43d-e18698f57081",
+              "leftValue": "={{ $json.message.content.relevance }}",
+              "rightValue": "Thái Bình",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "c12a9ad9-9a36-4eaf-af3d-da42b1255d45",
+      "name": "Send email",
+      "webhookId": "3c8d2914-135f-43d4-ab32-14a872b78804",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        3760,
+        1216
+      ],
+      "parameters": {
+        "fromEmail": "qlttpa05@gmail.com",
+        "toEmail": "qlttpa05@gmail.com, capthaibinh.hy@gmail.com, nqvuong.ca@gmail.com",
+        "subject": "=Phát hiện bài viết mới về tỉnh Hưng Yên - {{ $('OpenAI').first().json.message.content.sentiment }}",
+        "html": "=<h2>Bài viết mới về tỉnh Hưng Yên</h2>\n<p><strong>Tiêu đề:</strong> {{$('WebpageContentExtractor').first().json.title}}</p>\n<p><strong>Đánh giá:</strong> {{$('OpenAI').first().json.message.content.sentiment}}</p>\n<p><strong>Tóm tắt:</strong> {{$('OpenAI').first().json.message.content.summary}}</p>\n<p><strong>Từ khóa:</strong> {{$('OpenAI').first().json.message.content.keywords}}</p>\n<p><strong>Nguồn:</strong> {{$('news URL').first().json.url}}</p>\n<p><strong>Ngày xuất bản:</strong> {{$('WebpageContentExtractor').first().json.publishedTime || $('news URL').first().json.date}}</p>\n<p><a href=\"{{$('news URL').first().json.url}}\">Xem bài viết đầy đủ</a></p>",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "credentials": {
+        "smtp": {
+          "id": "xtEILCTR3BpoTsWM",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "id": "27446ca6-6b8b-4675-9e14-9989de3edd94",
+      "name": "Zalo Send Message2",
+      "type": "n8n-nodes-zalo-tools.zaloSendMessage",
+      "typeVersion": 4,
+      "onError": "continueRegularOutput",
+      "position": [
+        624,
+        2112
+      ],
+      "parameters": {
+        "threadId": "6155433155999157786",
+        "message": "=Thông báo link Báo lỗi: {{ $('URL Tracking').item.json.link }}",
+        "quote": {},
+        "mentions": {}
+      },
+      "credentials": {
+        "zaloApi": {
+          "id": "nqDZZOlQRNfsHanH",
+          "name": "Zalo API Credentials"
+        }
+      }
+    },
+    {
+      "id": "d4bee926-b498-466a-a76e-8d7f66508ec6",
+      "name": "Zalo Send Message1",
+      "type": "n8n-nodes-zalo-tools.zaloSendMessage",
+      "typeVersion": 4,
+      "onError": "continueRegularOutput",
+      "position": [
+        4608,
+        1216
+      ],
+      "parameters": {
+        "threadId": "2991710022690527986",
+        "type": 1,
+        "message": "=Phát hiện bài viết mới về tỉnh Hưng Yên   \nLink: {{$('news URL').item.json.url}}  \nTiêu đề: {{$('WebpageContentExtractor').item.json.title}}   \nĐánh giá: {{$('OpenAI').first().json.message.content.sentiment}}   \nTóm tắt nội dung: {{$('OpenAI').first().json.message.content.summary}}",
+        "quote": {},
+        "mentions": {}
+      },
+      "credentials": {
+        "zaloApi": {
+          "id": "nqDZZOlQRNfsHanH",
+          "name": "Zalo API Credentials"
+        }
+      }
+    },
+    {
+      "id": "53240431-bb8b-4cc7-8855-2996a154d415",
+      "name": "Basic LLM Chain",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        864,
+        32
+      ],
+      "parameters": {
+        "promptType": "define",
+        "text": "=Tiêu đề: {{ $('WebpageContentExtractor').item.json.title }}\n\nNội dung: {{ $('WebpageContentExtractor').item.json.textContent }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=Bạn là chuyên gia phân tích bài viết. Nhiệm vụ của bạn là kiểm tra bài viết có liên quan đến tình hình an ninh trật tự tại tỉnh Hưng Yên hoặc tỉnh Thái Bình không.  \n\nNếu có hãy đánh giá nó thuộc loại nào: \"Tích cực\", \"Tiêu cực\", hoặc \"Trung lập\" về tình hình an ninh trật tự tại tỉnh Hưng Yên hoặc tỉnh Thái Bình, cũng như tóm tắt nội dung chính trong 3-5 câu.  \n\n** LƯU Ý ** Xác định chính xác, chỉ phân tích nội dung bài viết bài viết liên quan đến tình hình an ninh trật tự tỉnh Hưng Yên hoặc tỉnh Thái Bình.  \n\nTrả về kết quả theo định dạng JSON:\n{   \n  \"relevance\": true // liên quan đến tỉnh Hưng Yên hoặc tỉnh Thái Bình   \n  \"sentiment\": \"Tích cực/Tiêu cực/Trung lập\",   \n  \"summary\": \"Tóm tắt nội dung\",   \n  \"keywords\": [\"từ khóa 1\", \"từ khóa 2\", \"từ khóa 3\"] \n}  Hoặc  \n{   \n  \"relevance\": false // không liên quan đến tỉnh Hưng Yên hoặc tỉnh Thái Bình\n  \"sentiment\": \"\",   \n  \"summary\": \"\",   \n  \"keywords\": [] \n}"
+            }
+          ]
+        },
+        "batching": {}
+      }
+    },
+    {
+      "id": "c817612b-b60e-4e15-9244-95b780761b19",
+      "name": "Ollama Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        880,
+        240
+      ],
+      "parameters": {
+        "model": "qwen3:8b",
+        "options": {}
+      },
+      "credentials": {
+        "ollamaApi": {
+          "id": "JuPdfzaFSo8soN0K",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "id": "74185d1d-21d6-451a-86be-b1c211ce299d",
+      "name": "OpenAI",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        1968,
+        1152
+      ],
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Bạn là chuyên gia phân tích bài viết. \n\nNhiệm vụ của bạn là kiểm tra bài viết có liên quan đến tình hình an ninh trật tự tại tỉnh Hưng Yên hoặc tỉnh Thái Bình không.  \n\nNếu có hãy đánh giá nó thuộc loại nào: \"Tích cực\", \"Tiêu cực\", hoặc \"Trung lập\" về tình hình an ninh trật tự tại tỉnh Hưng Yên hoặc tỉnh Thái Bình, cũng như tóm tắt nội dung chính trong 3-5 câu.  \n\n** LƯU Ý ** Xác định chính xác, chỉ phân tích nội dung bài viết bài viết liên quan đến tình hình an ninh trật tự tỉnh Hưng Yên hoặc tỉnh Thái Bình.  Trả về kết quả theo định dạng JSON: {   \"relevance\": true // liên quan đến tỉnh Hưng Yên hoặc tỉnh Thái Bình   \"sentiment\": \"Tích cực/Tiêu cực/Trung lập\",   \"summary\": \"Tóm tắt nội dung\",   \"keywords\": [\"từ khóa 1\", \"từ khóa 2\", \"từ khóa 3\"] }  Hoặc  {   \"relevance\": false // không liên quan đến tỉnh Hưng Yên hoặc tỉnh Thái Bình   \"sentiment\": \"\",   \"summary\": \"\",   \"keywords\": [] }",
+              "role": "system"
+            },
+            {
+              "content": "=Tiêu đề: {{ $('WebpageContentExtractor').item.json.title }}\n\nNội dung: {{ $('WebpageContentExtractor').item.json.textContent }}"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {}
+      },
+      "credentials": {
+        "openAiApi": {
+          "id": "36lKkzixUTg7ZoLf",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "id": "1f26973d-34d2-4693-aec9-94a1158f541e",
+      "name": "json_cleaner",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1232,
+        32
+      ],
+      "parameters": {
+        "language": "python",
+        "pythonCode": "import re\nimport json\n\noutput = _input.first().json.output\n\n# Bỏ hết phần trong <think>...</think>\noutput = re.sub(r\"<think>.*?</think>\", \"\", output, flags=re.DOTALL).strip()\n\n# Xoá markdown code block nếu có\nclean_output = re.sub(r\"```(?:json)?\", \"\", output).replace(\"```\", \"\").strip()\n\n# Parse thành JSON object nếu có thể\ntry:\n    response = json.loads(clean_output)\nexcept json.JSONDecodeError:\n    response = clean_output  # fallback nếu không phải JSON\n\nreturn [{\"output\": response}]"
+      }
+    },
+    {
+      "id": "0e322cae-8147-4c09-9ed3-f0df1d756b04",
+      "name": "Get many rows",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -352,
+        1504
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT * FROM sources WHERE deleted_at IS NULL AND parent_id = '206f085b-2a63-494e-af3b-9662d40f035d'::uuid",
+        "options": {}
+      },
+      "credentials": {
+        "postgres": {
+          "id": "cahyPostgresDb01",
+          "name": "PostgreSQL CAHY CyberWatch"
+        }
+      }
+    },
+    {
+      "id": "61ae8db0-7cd1-4d59-a363-5a9185492501",
+      "name": "Get row(s)",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "alwaysOutputData": true,
+      "position": [
+        2640,
+        1136
+      ],
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "sr5GHNk2mQcCvRRY",
+          "mode": "list",
+          "cachedResultName": "processed_urls",
+          "cachedResultUrl": "/projects/8FHGvj74CBo12CF2/datatables/sr5GHNk2mQcCvRRY"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "url",
+              "keyValue": "={{ $('news URL').item.json.url }}"
+            },
+            {
+              "keyName": "type",
+              "keyValue": "Báo"
+            }
+          ]
+        },
+        "returnAll": true
+      }
+    },
+    {
+      "id": "7027bded-9be6-4137-b732-316027403b62",
+      "name": "Insert row",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        3248,
+        1216
+      ],
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "sr5GHNk2mQcCvRRY",
+          "mode": "list",
+          "cachedResultName": "processed_urls",
+          "cachedResultUrl": "/projects/8FHGvj74CBo12CF2/datatables/sr5GHNk2mQcCvRRY"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "url": "={{ $('news URL').item.json.url }}",
+            "type": "Báo"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "url",
+              "displayName": "url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "type",
+              "displayName": "type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "d9a88634-e92b-4821-b7d7-d2e3dd0054b7",
+      "name": "get_sentimentId",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        4192,
+        1216
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT * FROM sentiments WHERE deleted_at IS NULL AND name = $1 LIMIT 1",
+        "options": {
+          "queryReplacement": "={{ [$('OpenAI').item.json.message.content.sentiment] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "cahyPostgresDb01",
+          "name": "PostgreSQL CAHY CyberWatch"
+        }
+      }
+    },
+    {
+      "id": "6adada91-108f-4cc3-9d63-20c52b9b0f1e",
+      "name": "Create a row",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        4416,
+        1216
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO news (source_id, content, link, publish_date, sentiment_id, summary, keywords, screenshot, channel) VALUES ($1::uuid, $2, $3, COALESCE(NULLIF($4, '')::timestamp, CURRENT_TIMESTAMP), $5::uuid, $6, $7, $8, 'ANTT') RETURNING *",
+        "options": {
+          "queryReplacement": "={{ [ $('news URL').item.json.source_id, `Tiêu đề: ${$('WebpageContentExtractor').item.json.title}\\n\\nNội dung: ${$('WebpageContentExtractor').item.json.textContent}`, $('news URL').item.json.url, String($('WebpageContentExtractor').first().json.publishedTime || $('news URL').first().json.date || ''), $('get_sentimentId').item.json.id, $('OpenAI').item.json.message.content.summary, $('OpenAI').item.json.message.content.keywords.join(', '), $('screenshot1').item.json.outputFilePath?.length > 0 ? `http://localhost:5678/webhook/screenshot-file?path=${$('screenshot1').item.json.outputFilePath[0].split(/[/\\\\]/).slice(-2).join('/')}` : '' ] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "cahyPostgresDb01",
+          "name": "PostgreSQL CAHY CyberWatch"
+        }
+      }
+    },
+    {
+      "id": "2b1b43f3-6941-40ec-a1bf-eafc97489db7",
+      "name": "screenshot1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3520,
+        1216
+      ],
+      "parameters": {
+        "url": "http://127.0.0.1:5678/webhook/screenshot_news",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "url",
+              "value": "={{ $json.url }}"
+            },
+            {
+              "name": "source",
+              "value": "news"
+            },
+            {
+              "name": "profile_id",
+              "value": "news-antt-01"
+            }
+          ]
+        },
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "check laodong",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Zalo Send Message2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "XML": {
+      "main": [
+        [
+          {
+            "node": "Extract newspaper URL",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "XML",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Zalo Send Message2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "XML1": {
+      "main": [
+        [
+          {
+            "node": "Extract newspaper URL1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "URL Tracking": {
+      "main": [
+        [
+          {
+            "node": "news URL",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "news URL": {
+      "main": [
+        [],
+        [
+          {
+            "node": "check thaibinh + hungyen 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check laodong": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "XML1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract newspaper URL": {
+      "main": [
+        [
+          {
+            "node": "URL Tracking",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract newspaper URL1": {
+      "main": [
+        [
+          {
+            "node": "URL Tracking",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check laodong 1": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule hàng giờ": {
+      "main": [
+        [
+          {
+            "node": "Get many rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check tracked url": {
+      "main": [
+        [
+          {
+            "node": "Insert row",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "news URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request3": {
+      "main": [
+        [
+          {
+            "node": "WebpageContentExtractor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request4": {
+      "main": [
+        [
+          {
+            "node": "WebpageContentExtractor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WebpageContentExtractor": {
+      "main": [
+        [
+          {
+            "node": "check thaibinh + hungyen ",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check thaibinh + hungyen 1": {
+      "main": [
+        [
+          {
+            "node": "check laodong 1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "news URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check thaibinh + hungyen ": {
+      "main": [
+        [
+          {
+            "node": "OpenAI",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "news URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check thaibinh + hungyen 2": {
+      "main": [
+        [
+          {
+            "node": "Get row(s)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "news URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send email": {
+      "main": [
+        [
+          {
+            "node": "get_sentimentId",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Zalo Send Message2": {
+      "main": [
+        [
+          {
+            "node": "URL Tracking",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Zalo Send Message1": {
+      "main": [
+        [
+          {
+            "node": "news URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "json_cleaner",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI": {
+      "main": [
+        [
+          {
+            "node": "check thaibinh + hungyen 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "json_cleaner": {
+      "main": [
+        []
+      ]
+    },
+    "Get many rows": {
+      "main": [
+        [
+          {
+            "node": "URL Tracking",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s)": {
+      "main": [
+        [
+          {
+            "node": "check tracked url",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert row": {
+      "main": [
+        [
+          {
+            "node": "screenshot1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get_sentimentId": {
+      "main": [
+        [
+          {
+            "node": "Create a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a row": {
+      "main": [
+        [
+          {
+            "node": "Zalo Send Message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "screenshot1": {
+      "main": [
+        [
+          {
+            "node": "Send email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "nodeGroups": [],
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": {
+    "node:Schedule hàng giờ": {
+      "recurrenceRules": [
+        null
+      ],
+      "recurrenceRuleSignatures": [
+        null
+      ]
+    }
+  },
+  "pinData": {
+    "Schedule hàng giờ": [
+      {
+        "json": {
+          "timestamp": "2025-10-28T13:00:01.006+07:00",
+          "Readable date": "October 28th 2025, 1:00:01 pm",
+          "Readable time": "1:00:01 pm",
+          "Day of week": "Tuesday",
+          "Year": "2025",
+          "Month": "October",
+          "Day of month": "28",
+          "Hour": "13",
+          "Minute": "00",
+          "Second": "01",
+          "Timezone": "Asia/Ho_Chi_Minh (UTC+07:00)"
+        }
+      }
+    ]
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "844a116902e43df933869fa70a9c4dff45f89d7ef757b509c408ffd1d8c73199"
+  },
+  "tags": [],
+  "shared": [
+    {
+      "role": "workflow:owner",
+      "workflowId": "qd3oBJpB7JuGG3vo",
+      "projectId": "AYl8YMoGuMcSHNnP",
+      "project": {
+        "id": "AYl8YMoGuMcSHNnP",
+        "name": "Do Manh Hai <haimanhdo1999@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "customTelemetryTags": [],
+        "creatorId": "53db2406-6c6e-4a51-b1d1-86fdc88e5b41",
+        "createdAt": "2026-11-03T03:08:58.055Z",
+        "updatedAt": "2026-11-03T03:43:48.499Z"
+      },
+      "createdAt": "2026-11-03T03:09:48.772Z",
+      "updatedAt": "2026-11-03T03:09:48.772Z"
+    }
+  ],
+  "activeVersion": null,
+  "parentFolder": null
+}

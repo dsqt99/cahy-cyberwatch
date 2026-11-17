@@ -1,0 +1,139 @@
+{
+  "name": "screenshot_fb",
+  "nodes": [
+    {
+      "parameters": {
+        "multipleMethods": true,
+        "httpMethod": [
+          "GET",
+          "POST"
+        ],
+        "path": "screenshot_fb",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -240,
+        0
+      ],
+      "id": "269f65cf-6e94-4773-b521-e66df1c086e5",
+      "name": "Webhook",
+      "webhookId": "ac94b1ab-02b5-4694-a4b5-99f8e6cc85bf"
+    },
+    {
+      "parameters": {
+        "resource": "pageInteraction",
+        "operation": "smartCapture",
+        "profileId": "={{ $json.body?.profile_id || $json.query?.profile_id || '' }}",
+        "platformPreset": "fb",
+        "url": "={{ $json.body?.url || $json.query?.url || '' }}",
+        "selectors": "div[aria-posinset=\"1\"], div[role=\"main\"]",
+        "outputFilePath": "",
+        "screenshotBaseDir": "D:\\code\\dsqt\\conganhungyen\\ai-social-tracking\\cahy-cyberwatch\\screenshots",
+        "sourceTag": "={{ $json.body?.source ?? $json.query?.source ?? '' }}",
+        "additionalOptions": {
+          "autoFallbackProfile": true,
+          "autoCreateProfile": true,
+          "scrollDelayMs": 1500,
+          "primaryTimeoutMs": 20000
+        }
+      },
+      "type": "n8n-nodes-foxprofile.foxProfile",
+      "typeVersion": 1,
+      "position": [
+        40,
+        0
+      ],
+      "id": "7f3a11e0-81c9-4e3f-9d1a-fb001f0dc001",
+      "name": "FoxProfile Browser",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "fieldsToAggregate": {
+          "fieldToAggregate": [
+            {
+              "fieldToAggregate": "outputFilePath"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        300,
+        0
+      ],
+      "id": "6fd09801-20ad-4677-b99a-ee3cdeddf455",
+      "name": "Aggregate"
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        560,
+        0
+      ],
+      "id": "cfedd2af-2c0f-4d62-a822-c62e98b54e6d",
+      "name": "Respond to Webhook"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "FoxProfile Browser",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "FoxProfile Browser",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FoxProfile Browser": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "id": "aqI4x3VY3UU9pMsw",
+  "tags": []
+}

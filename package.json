@@ -11,7 +11,9 @@
     "smoke": "electron . --smoke-test",
     "test": "node --test",
     "dist": "npm run build:dashboard && electron-builder --win portable",
-    "build:dashboard": "npm --prefix ../social-tracking-dashboard run build"
+    "build:dashboard": "npm --prefix dashboard run build",
+    "setup": "npm install && npm --prefix dashboard install && npm run build:dashboard && npm run setup:fox",
+    "setup:fox": "cd foxprofile && python -m venv .venv && .venv\\Scripts\\python.exe -m pip install -r requirements.txt"
   },
   "build": {
     "appId": "vn.cahy.cyberwatch",
@@ -32,7 +34,7 @@
     },
     "extraResources": [
       {
-        "from": "../social-tracking-dashboard/dist",
+        "from": "dashboard/dist",
         "to": "dashboard"
       }
     ]

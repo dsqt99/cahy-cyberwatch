@@ -1,0 +1,152 @@
+{
+  "name": "Trợ lý AI Phân tích & Lịch sử Chat CyberWatch",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "chat/competitions",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-420, -180],
+      "id": "cahy-chat-comp-wh-01",
+      "name": "Webhook Chat Completions",
+      "webhookId": "cahy-chat-competitions-wh"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body || $input.first().json || {};\nconst sessionId = String(body.session_id || 'default-session').trim();\nconst userInput = String(body.input || '').trim();\nconst source = String(body.source || 'ANTT') === 'PhanDong' ? 'PhanDong' : 'ANTT';\n\nconst PG_API = ($env.POSTGRES_API_URL || 'http://postgres_api:5434').replace(/\\/+$/, '');\nconst OPENAI_API_KEY = $env.OPENAI_API_KEY || '';\nconst OPENAI_BASE_URL = ($env.OPENAI_BASE_URL || 'https://api.openai.com/v1').replace(/\\/+$/, '');\nconst OPENAI_MODEL = $env.OPENAI_MODEL || 'gpt-4o-mini';\n\nif (!userInput) {\n  const emptyLine = JSON.stringify({ type: 'item', content: 'Vui lòng nhập nội dung câu hỏi phân tích.' }) + '\\n';\n  return [{ json: { ndjson: emptyLine } }];\n}\n\nconst store = $getWorkflowStaticData('global');\nif (!store.sessions) store.sessions = {};\nif (!store.counter) store.counter = 1;\nif (!Array.isArray(store.sessions[sessionId])) store.sessions[sessionId] = [];\n\nlet recentArticles = [];\nlet latestReport = null;\n\ntry {\n  const [newsRes, repRes] = await Promise.all([\n    this.helpers.httpRequest({\n      method: 'GET',\n      url: `${PG_API}/api/news/paginated?page=1&limit=25&channel=${encodeURIComponent(source)}`,\n      json: true,\n    }).catch(() => ({ data: [] })),\n    this.helpers.httpRequest({\n      method: 'GET',\n      url: `${PG_API}/api/trend-reports?channel=${encodeURIComponent(source)}&limit=1`,\n      json: true,\n    }).catch(() => ({ data: [] })),\n  ]);\n  if (Array.isArray(newsRes?.data)) recentArticles = newsRes.data;\n  if (Array.isArray(repRes?.data) && repRes.data[0]) latestReport = repRes.data[0];\n} catch {}\n\nconst dbContext = recentArticles\n  .map((a, i) => `${i + 1}. [${a.publish_date || ''}] [${a.sentiment?.name || 'Trung lập'}] Nguồn: ${a.source?.name || 'N/A'} | Tóm tắt: ${a.summary || ''} | Từ khóa: ${a.keywords || ''} | Link: ${a.link || ''}`)\n  .join('\\n');\n\nconst reportContext = latestReport\n  ? `Báo cáo xu hướng gần nhất (${latestReport.period}: ${latestReport.period_start} -> ${latestReport.period_end}):\\n${String(latestReport.content || '').slice(0, 1500)}`\n  : '';\n\nconst historyMsgs = store.sessions[sessionId].slice(-8).map((m) => ({\n  role: (m.message?.role || m.role) === 'assistant' ? 'assistant' : 'user',\n  content: String(m.message?.content ?? m.content ?? ''),\n})).filter((m) => m.content.length > 0);\n\nlet answer = '';\nif (OPENAI_API_KEY) {\n  try {\n    const aiRes = await this.helpers.httpRequest({\n      method: 'POST',\n      url: `${OPENAI_BASE_URL}/chat/completions`,\n      headers: {\n        Authorization: `Bearer ${OPENAI_API_KEY}`,\n        'Content-Type': 'application/json',\n      },\n      body: {\n        model: OPENAI_MODEL,\n        messages: [\n          {\n            role: 'system',\n            content: `Bạn là Trợ lý Phân tích Không gian mạng CAHY CyberWatch (kênh dữ liệu hiện tại: ${source}). Hãy trả lời chính xác, chuyên nghiệp bằng tiếng Việt dựa trên dữ liệu thực tế từ cơ sở dữ liệu PostgreSQL dưới đây. Khi trích dẫn bài viết, hãy nêu rõ nguồn, đánh giá sắc thái và đường dẫn gốc.\\n\\n--- DỮ LIỆU TIN BÀI MỚI NHẤT ---\\n${dbContext || 'Chưa có bài viết.'}\\n\\n--- BÁO CÁO XU HƯỚNG ---\\n${reportContext}`,\n          },\n          ...historyMsgs,\n          { role: 'user', content: userInput },\n        ],\n      },\n      json: true,\n    });\n    answer = aiRes?.choices?.[0]?.message?.content || '';\n  } catch (err) {\n    answer = `Không thể kết nối OpenAI API lúc này (${err.message || 'error'}). Dữ liệu kênh ${source} hiện ghi nhận ${recentArticles.length} bài viết gần nhất.`;\n  }\n} else {\n  answer = `Chưa cấu hình OPENAI_API_KEY trên n8n localhost. Thống kê nhanh kênh ${source}: ${recentArticles.length} bài viết gần nhất.`;\n}\n\nconst nowIso = new Date().toISOString();\nconst nextSessionMsgs = [\n  ...store.sessions[sessionId],\n  { id: store.counter++, session_id: sessionId, created_at: nowIso, message: { role: 'user', type: 'human', content: userInput } },\n  { id: store.counter++, session_id: sessionId, created_at: nowIso, message: { role: 'assistant', type: 'ai', content: answer } }\n].slice(-40);\nconst nextSessions = { ...store.sessions, [sessionId]: nextSessionMsgs };\nconst sessionKeys = Object.keys(nextSessions);\nif (sessionKeys.length > 30) {\n  delete nextSessions[sessionKeys[0]];\n}\nstore.sessions = nextSessions;\n\nconst lines = [\n  JSON.stringify({ type: 'item', content: 'Calling supabase_news_intelligence' }),\n  JSON.stringify({ type: 'item', content: answer }),\n];\nreturn [{ json: { ndjson: lines.join('\\n') + '\\n' } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-140, -180],
+      "id": "cahy-chat-comp-code-02",
+      "name": "Run CyberWatch RAG Chat"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.ndjson }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/x-ndjson; charset=utf-8"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [140, -180],
+      "id": "cahy-chat-comp-resp-03",
+      "name": "Respond NDJSON Stream"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "get_n8n_dashboard_chat_histories",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-420, 60],
+      "id": "cahy-chat-hist-wh-04",
+      "name": "Webhook Get Chat Histories",
+      "webhookId": "cahy-chat-histories-wh"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body || $input.first().json || {};\nconst sessionId = String(body.session_id || '').trim();\nconst store = $getWorkflowStaticData('global');\nconst messages = (store.sessions && sessionId && store.sessions[sessionId]) ? store.sessions[sessionId] : [];\nreturn [{ json: { messages } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-140, 60],
+      "id": "cahy-chat-hist-code-05",
+      "name": "Read Session Messages"
+    },
+    {
+      "parameters": {
+        "respondWith": "firstIncomingItem",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [140, 60],
+      "id": "cahy-chat-hist-resp-06",
+      "name": "Respond Chat Histories"
+    },
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "get_n8n_dashboard_chat_sessions",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-420, 280],
+      "id": "cahy-chat-sess-wh-07",
+      "name": "Webhook Get Chat Sessions",
+      "webhookId": "cahy-chat-sessions-wh"
+    },
+    {
+      "parameters": {
+        "jsCode": "const store = $getWorkflowStaticData('global');\nconst sessions = store.sessions || {};\nconst data = [];\nfor (const items of Object.values(sessions)) {\n  if (Array.isArray(items)) {\n    for (const item of items) data.push(item);\n  }\n}\nreturn [{ json: { data } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-140, 280],
+      "id": "cahy-chat-sess-code-08",
+      "name": "List All Chat Sessions"
+    },
+    {
+      "parameters": {
+        "respondWith": "firstIncomingItem",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [140, 280],
+      "id": "cahy-chat-sess-resp-09",
+      "name": "Respond Chat Sessions"
+    }
+  ],
+  "connections": {
+    "Webhook Chat Completions": {
+      "main": [[{ "node": "Run CyberWatch RAG Chat", "type": "main", "index": 0 }]]
+    },
+    "Run CyberWatch RAG Chat": {
+      "main": [[{ "node": "Respond NDJSON Stream", "type": "main", "index": 0 }]]
+    },
+    "Webhook Get Chat Histories": {
+      "main": [[{ "node": "Read Session Messages", "type": "main", "index": 0 }]]
+    },
+    "Read Session Messages": {
+      "main": [[{ "node": "Respond Chat Histories", "type": "main", "index": 0 }]]
+    },
+    "Webhook Get Chat Sessions": {
+      "main": [[{ "node": "List All Chat Sessions", "type": "main", "index": 0 }]]
+    },
+    "List All Chat Sessions": {
+      "main": [[{ "node": "Respond Chat Sessions", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "id": "cahyAiChatWf2026",
+  "tags": []
+}

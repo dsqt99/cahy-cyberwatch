@@ -1,0 +1,352 @@
+{
+  "name": "Tác chiến Phản bác AI & Hàng đợi Thu thập",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "add-link-to-pending-queue",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-460, -420],
+      "id": "cahy-queue-wh-01",
+      "name": "Webhook Add Link Queue",
+      "webhookId": "cahy-add-link-queue-wh"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body || $input.first().json || {};\nconst targetUrl = String(body.url || body.link || '').trim();\nif (!targetUrl || !/^https?:\\/\\//i.test(targetUrl)) {\n  return [{ json: { ok: false, error: 'Đường dẫn URL không hợp lệ.' } }];\n}\n\nconst PG_API = ($env.POSTGRES_API_URL || 'http://postgres_api:5434').replace(/\\/+$/, '');\n\nlet insertedId = null;\ntry {\n  const res = await this.helpers.httpRequest({\n    method: 'POST',\n    url: `${PG_API}/api/news-queue`,\n    headers: { 'Content-Type': 'application/json' },\n    body: { url: targetUrl },\n    json: true,\n  });\n  if (res?.data?.id) insertedId = res.data.id;\n} catch {}\n\nreturn [{\n  json: {\n    ok: true,\n    id: insertedId,\n    url: targetUrl,\n    status: 'pending',\n    queuedAt: new Date().toISOString(),\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-160, -420],
+      "id": "cahy-queue-code-02",
+      "name": "Enqueue URL to Supabase"
+    },
+    {
+      "parameters": {
+        "respondWith": "firstIncomingItem",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [140, -420],
+      "id": "cahy-queue-resp-03",
+      "name": "Respond Add Link Queue"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "get-post-content",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-460, -220],
+      "id": "cahy-extract-wh-04",
+      "name": "Webhook Get Post Content",
+      "webhookId": "cahy-get-post-content-wh"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body || $input.first().json || {};\nconst targetUrl = String(body.url || body.link || '').trim();\nif (!targetUrl) {\n  return [{ json: { ok: false, error: 'Thiếu URL bài viết.' } }];\n}\n\nconst decodeEntities = (str) =>\n  String(str || '')\n    .replace(/&nbsp;/gi, ' ')\n    .replace(/&amp;/gi, '&')\n    .replace(/&quot;/gi, '\"')\n    .replace(/&#39;|&apos;/gi, \"'\")\n    .replace(/&lt;/gi, '<')\n    .replace(/&gt;/gi, '>')\n    .replace(/&#(\\d+);/g, (_, code) => String.fromCharCode(Number(code)))\n    .replace(/&#x([0-9a-f]+);/gi, (_, hex) => String.fromCharCode(parseInt(hex, 16)));\n\ntry {\n  const html = await this.helpers.httpRequest({\n    method: 'GET',\n    url: targetUrl,\n    headers: {\n      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',\n      Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',\n      'Accept-Language': 'vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7',\n    },\n    json: false,\n  });\n\n  const rawHtml = String(html || '');\n  const ogTitle = (rawHtml.match(/<meta[^>]+property=[\"']og:title[\"'][^>]+content=[\"']([^\"']+)[\"']/i) || [])[1] || '';\n  const docTitle = (rawHtml.match(/<title[^>]*>([\\s\\S]*?)<\\/title>/i) || [])[1] || '';\n  const ogDesc = (rawHtml.match(/<meta[^>]+(?:property=[\"']og:description[\"']|name=[\"']description[\"'])[^>]+content=[\"']([^\"']+)[\"']/i) || [])[1] || '';\n\n  const stripped = rawHtml\n    .replace(/<script[\\s\\S]*?<\\/script>/gi, ' ')\n    .replace(/<style[\\s\\S]*?<\\/style>/gi, ' ')\n    .replace(/<noscript[\\s\\S]*?<\\/noscript>/gi, ' ')\n    .replace(/<header[\\s\\S]*?<\\/header>/gi, ' ')\n    .replace(/<footer[\\s\\S]*?<\\/footer>/gi, ' ')\n    .replace(/<nav[\\s\\S]*?<\\/nav>/gi, ' ');\n\n  const paragraphs = [];\n  const pRegex = /<(?:p|article|h1|h2|h3)[^>]*>([\\s\\S]*?)<\\/(?:p|article|h1|h2|h3)>/gi;\n  let match;\n  while ((match = pRegex.exec(stripped)) !== null) {\n    const text = decodeEntities(match[1].replace(/<[^>]+>/g, ' ').replace(/\\s+/g, ' ').trim());\n    if (text.length >= 35 && !paragraphs.includes(text)) {\n      paragraphs.push(text);\n    }\n  }\n\n  const title = decodeEntities((ogTitle || docTitle).replace(/\\s+/g, ' ').trim());\n  const desc = decodeEntities(ogDesc.replace(/\\s+/g, ' ').trim());\n  const bodyText = paragraphs.slice(0, 30).join('\\n\\n');\n  const fullContent = [title ? `Tiêu đề: ${title}` : '', desc ? `Tóm tắt: ${desc}` : '', bodyText]\n    .filter(Boolean)\n    .join('\\n\\n')\n    .trim();\n\n  return [{\n    json: {\n      ok: true,\n      url: targetUrl,\n      title,\n      content: fullContent || desc || title || `Không trích xuất được văn bản tĩnh từ ${targetUrl}`,\n      text: fullContent || desc || title,\n    }\n  }];\n} catch (e) {\n  return [{\n    json: {\n      ok: false,\n      url: targetUrl,\n      content: '',\n      error: e.message || 'Không thể tải trang đích.',\n    }\n  }];\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-160, -220],
+      "id": "cahy-extract-code-05",
+      "name": "Extract Webpage Text"
+    },
+    {
+      "parameters": {
+        "respondWith": "firstIncomingItem",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [140, -220],
+      "id": "cahy-extract-resp-06",
+      "name": "Respond Post Content"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "generate-rebuttals",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-460, -20],
+      "id": "cahy-genrebut-wh-07",
+      "name": "Webhook Generate Rebuttals",
+      "webhookId": "cahy-generate-rebuttals-wh"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body || $input.first().json || {};\nconst summaries = Array.isArray(body.summaries) ? body.summaries : [String(body.content || body.text || '')];\nconst sourceText = summaries.filter(Boolean).join('\\n\\n').trim();\n\nconst OPENAI_API_KEY = $env.OPENAI_API_KEY || '';\nconst OPENAI_BASE_URL = ($env.OPENAI_BASE_URL || 'https://api.openai.com/v1').replace(/\\/+$/, '');\nconst OPENAI_MODEL = $env.OPENAI_MODEL || 'gpt-4o-mini';\n\nif (!sourceText) {\n  return [{ json: { rebuttals: [] } }];\n}\n\nif (OPENAI_API_KEY) {\n  try {\n    const aiRes = await this.helpers.httpRequest({\n      method: 'POST',\n      url: `${OPENAI_BASE_URL}/chat/completions`,\n      headers: {\n        Authorization: `Bearer ${OPENAI_API_KEY}`,\n        'Content-Type': 'application/json',\n      },\n      body: {\n        model: OPENAI_MODEL,\n        response_format: { type: 'json_object' },\n        messages: [\n          {\n            role: 'system',\n            content: 'Bạn là chuyên gia truyền thông định hướng dư luận và đấu tranh phản bác các quan điểm sai trái, thông tin xấu độc trên không gian mạng. Hãy biên soạn 3 phương án bài viết phản bác sắc bén, lập luận chặt chẽ, chuẩn mực pháp luật Việt Nam (1. Góc độ Pháp lý & Sự thật khách quan; 2. Góc độ Cảnh báo người dân & Nhận diện thủ đoạn; 3. Góc độ Bình luận chính luận sắc bén). Trả về đúng JSON: {\"rebuttals\": [{\"title\": \"...\", \"content\": \"...\"}, ...]}',\n          },\n          {\n            role: 'user',\n            content: `Nội dung cần đấu tranh phản bác / định hướng thông tin:\\n\\n${sourceText}`,\n          },\n        ],\n      },\n      json: true,\n    });\n    const parsed = JSON.parse(aiRes?.choices?.[0]?.message?.content || '{}');\n    if (Array.isArray(parsed.rebuttals) && parsed.rebuttals.length > 0) {\n      return [{ json: { rebuttals: parsed.rebuttals } }];\n    }\n  } catch {}\n}\n\nreturn [{\n  json: {\n    rebuttals: [\n      {\n        title: 'Phương án 1: Làm rõ sự thật khách quan và căn cứ pháp lý',\n        content: `Qua rà soát thông tin lan truyền với nội dung: \"${sourceText.slice(0, 180)}...\", cơ quan chức năng khẳng định cần tiếp cận thông tin từ nguồn chính thống, đối chiếu quy định pháp luật hiện hành và không chia sẻ thông tin chưa kiểm chứng.`,\n      },\n      {\n        title: 'Phương án 2: Cảnh báo nhận diện thông tin sai lệch trên không gian mạng',\n        content: 'Người dùng mạng xã hội cần nâng cao cảnh giác trước các nội dung cắt ghép, suy diễn thiếu kiểm chứng gây hoang mang dư luận, chủ động theo dõi cổng thông tin điện tử chính thức của cơ quan chức năng.',\n      },\n      {\n        title: 'Phương án 3: Định hướng dư luận và khuyến nghị cộng đồng',\n        content: 'Mọi hành vi đăng tải, tán phát thông tin sai sự thật xâm phạm quyền và lợi ích hợp pháp của tổ chức, cá nhân đều bị xử lý nghiêm theo quy định của Luật An ninh mạng.',\n      },\n    ],\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-160, -20],
+      "id": "cahy-genrebut-code-08",
+      "name": "Generate 3 Rebuttal Scenarios"
+    },
+    {
+      "parameters": {
+        "respondWith": "firstIncomingItem",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [140, -20],
+      "id": "cahy-genrebut-resp-09",
+      "name": "Respond Rebuttal Scenarios"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "generate-rebuttal-image",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-460, 180],
+      "id": "cahy-genimg-wh-10",
+      "name": "Webhook Generate Rebuttal Image",
+      "webhookId": "cahy-generate-rebuttal-image-wh"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body || $input.first().json || {};\nconst content = String(body.content || '').trim();\nconst OPENAI_API_KEY = $env.OPENAI_API_KEY || '';\nconst OPENAI_BASE_URL = ($env.OPENAI_BASE_URL || 'https://api.openai.com/v1').replace(/\\/+$/, '');\n\nif (OPENAI_API_KEY && content) {\n  try {\n    const imgRes = await this.helpers.httpRequest({\n      method: 'POST',\n      url: `${OPENAI_BASE_URL}/images/generations`,\n      headers: {\n        Authorization: `Bearer ${OPENAI_API_KEY}`,\n        'Content-Type': 'application/json',\n      },\n      body: {\n        model: 'dall-e-3',\n        prompt: `Editorial cybersecurity and fact-checking news illustration, clean modern journalistic graphic style, deep navy blue and slate palette, no text overlays. Topic context: ${content.slice(0, 350)}`,\n        n: 1,\n        size: '1024x1024',\n        response_format: 'b64_json',\n      },\n      json: true,\n    });\n    const b64 = imgRes?.data?.[0]?.b64_json;\n    if (b64) {\n      return [{ json: { ok: true, image_base64: b64 } }];\n    }\n  } catch (e) {\n    return [{ json: { ok: false, error: e.message || 'OpenAI Image API error' } }];\n  }\n}\n\nreturn [{ json: { ok: false, error: 'Chưa cấu hình OPENAI_API_KEY hoặc thiếu nội dung.' } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-160, 180],
+      "id": "cahy-genimg-code-11",
+      "name": "Generate Illustration via OpenAI"
+    },
+    {
+      "parameters": {
+        "respondWith": "firstIncomingItem",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [140, 180],
+      "id": "cahy-genimg-resp-12",
+      "name": "Respond Rebuttal Image"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "post-rebuttal-manual",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-460, 380],
+      "id": "cahy-postman-wh-13",
+      "name": "Webhook Post Rebuttal Manual",
+      "webhookId": "cahy-post-rebuttal-manual-wh"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "post-rebuttal",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-460, 540],
+      "id": "cahy-postreb-wh-14",
+      "name": "Webhook Post Rebuttal",
+      "webhookId": "cahy-post-rebuttal-wh"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body || $input.first().json || {};\nconst rebuttalId = String(body.rebuttalId || body.id || '').trim();\nconst PG_API = ($env.POSTGRES_API_URL || 'http://postgres_api:5434').replace(/\\/+$/, '');\n\nif (rebuttalId) {\n  try {\n    await this.helpers.httpRequest({\n      method: 'PATCH',\n      url: `${PG_API}/api/rebuttals/${encodeURIComponent(rebuttalId)}`,\n      headers: { 'Content-Type': 'application/json' },\n      body: { status: 'published' },\n      json: true,\n    });\n  } catch {}\n}\n\nreturn [{\n  json: {\n    ok: true,\n    rebuttalId,\n    status: 'published',\n    publishedAt: new Date().toISOString(),\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-160, 460],
+      "id": "cahy-postreb-code-15",
+      "name": "Mark Rebuttal Published"
+    },
+    {
+      "parameters": {
+        "respondWith": "firstIncomingItem",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [140, 460],
+      "id": "cahy-postreb-resp-16",
+      "name": "Respond Rebuttal Published"
+    },
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "run-rebuttal",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-460, 740],
+      "id": "cahy-runreb-wh-17",
+      "name": "Webhook Run Auto Rebuttal",
+      "webhookId": "cahy-run-rebuttal-wh"
+    },
+    {
+      "parameters": {
+        "jsCode": "const PG_API = ($env.POSTGRES_API_URL || 'http://postgres_api:5434').replace(/\\/+$/, '');\nconst OPENAI_API_KEY = $env.OPENAI_API_KEY || '';\nconst OPENAI_BASE_URL = ($env.OPENAI_BASE_URL || 'https://api.openai.com/v1').replace(/\\/+$/, '');\nconst OPENAI_MODEL = $env.OPENAI_MODEL || 'gpt-4o-mini';\n\nlet targetSummaries = [];\ntry {\n  const newsRes = await this.helpers.httpRequest({\n    method: 'GET',\n    url: `${PG_API}/api/news?limit=30`,\n    json: true,\n  });\n  const newsRows = newsRes?.data;\n  if (Array.isArray(newsRows)) {\n    const neg = newsRows.filter((r) => r.sentiment?.name === 'Tiêu cực');\n    targetSummaries = (neg.length > 0 ? neg : newsRows).slice(0, 3).map((r) => r.summary || r.content || '').filter(Boolean);\n  }\n} catch {}\n\nlet title = `Bản tin định hướng thông tin ngày ${new Date().toLocaleDateString('vi-VN')}`;\nlet content = 'Cơ quan chức năng khuyến cáo người dân tiếp nhận thông tin chính thống, cảnh giác trước các luận điệu xuyên tạc, chưa kiểm chứng trên không gian mạng.';\n\nif (OPENAI_API_KEY && targetSummaries.length > 0) {\n  try {\n    const aiRes = await this.helpers.httpRequest({\n      method: 'POST',\n      url: `${OPENAI_BASE_URL}/chat/completions`,\n      headers: {\n        Authorization: `Bearer ${OPENAI_API_KEY}`,\n        'Content-Type': 'application/json',\n      },\n      body: {\n        model: OPENAI_MODEL,\n        response_format: { type: 'json_object' },\n        messages: [\n          {\n            role: 'system',\n            content: 'Biên soạn 1 bài viết chính luận định hướng dư luận và phản bác thông tin tiêu cực/sai lệch bằng tiếng Việt. Trả về JSON: {\"title\": \"...\", \"content\": \"...\"}',\n          },\n          {\n            role: 'user',\n            content: targetSummaries.join('\\n\\n'),\n          },\n        ],\n      },\n      json: true,\n    });\n    const parsed = JSON.parse(aiRes?.choices?.[0]?.message?.content || '{}');\n    if (parsed.title) title = parsed.title;\n    if (parsed.content) content = parsed.content;\n  } catch {}\n}\n\nlet createdId = null;\ntry {\n  const inserted = await this.helpers.httpRequest({\n    method: 'POST',\n    url: `${PG_API}/api/rebuttals`,\n    headers: { 'Content-Type': 'application/json' },\n    body: { title, content, status: 'draft' },\n    json: true,\n  });\n  if (inserted?.data?.id) createdId = inserted.data.id;\n} catch {}\n\nreturn [{ json: { ok: true, id: createdId, title, status: 'draft' } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-160, 740],
+      "id": "cahy-runreb-code-18",
+      "name": "Draft Daily Rebuttal to Supabase"
+    },
+    {
+      "parameters": {
+        "respondWith": "firstIncomingItem",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [140, 740],
+      "id": "cahy-runreb-resp-19",
+      "name": "Respond Auto Rebuttal"
+    },
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "run-comment",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-460, 940],
+      "id": "cahy-runcmt-wh-20",
+      "name": "Webhook Run Auto Comment",
+      "webhookId": "cahy-run-comment-wh"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "run-a-comment",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-460, 1100],
+      "id": "cahy-runacmt-wh-21",
+      "name": "Webhook Run Single Comment",
+      "webhookId": "cahy-run-single-comment-wh"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body || $input.first().json || {};\nconst newsId = String(body.newsId || '').trim();\nconst PG_API = ($env.POSTGRES_API_URL || 'http://postgres_api:5434').replace(/\\/+$/, '');\n\nif (newsId) {\n  try {\n    await this.helpers.httpRequest({\n      method: 'PATCH',\n      url: `${PG_API}/api/news/${encodeURIComponent(newsId)}`,\n      headers: { 'Content-Type': 'application/json' },\n      body: { comment_status: 'https://done' },\n      json: true,\n    });\n  } catch {}\n}\n\nreturn [{\n  json: {\n    ok: true,\n    newsId: newsId || 'batch',\n    url: 'https://done',\n    message: 'Đã thực thi luồng bình luận định hướng trên n8n & PostgreSQL localhost.',\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-160, 1020],
+      "id": "cahy-runcmt-code-22",
+      "name": "Dispatch Comment & Update Status"
+    },
+    {
+      "parameters": {
+        "respondWith": "firstIncomingItem",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [140, 1020],
+      "id": "cahy-runcmt-resp-23",
+      "name": "Respond Comment Trigger"
+    }
+  ],
+  "connections": {
+    "Webhook Add Link Queue": {
+      "main": [[{ "node": "Enqueue URL to Supabase", "type": "main", "index": 0 }]]
+    },
+    "Enqueue URL to Supabase": {
+      "main": [[{ "node": "Respond Add Link Queue", "type": "main", "index": 0 }]]
+    },
+    "Webhook Get Post Content": {
+      "main": [[{ "node": "Extract Webpage Text", "type": "main", "index": 0 }]]
+    },
+    "Extract Webpage Text": {
+      "main": [[{ "node": "Respond Post Content", "type": "main", "index": 0 }]]
+    },
+    "Webhook Generate Rebuttals": {
+      "main": [[{ "node": "Generate 3 Rebuttal Scenarios", "type": "main", "index": 0 }]]
+    },
+    "Generate 3 Rebuttal Scenarios": {
+      "main": [[{ "node": "Respond Rebuttal Scenarios", "type": "main", "index": 0 }]]
+    },
+    "Webhook Generate Rebuttal Image": {
+      "main": [[{ "node": "Generate Illustration via OpenAI", "type": "main", "index": 0 }]]
+    },
+    "Generate Illustration via OpenAI": {
+      "main": [[{ "node": "Respond Rebuttal Image", "type": "main", "index": 0 }]]
+    },
+    "Webhook Post Rebuttal Manual": {
+      "main": [[{ "node": "Mark Rebuttal Published", "type": "main", "index": 0 }]]
+    },
+    "Webhook Post Rebuttal": {
+      "main": [[{ "node": "Mark Rebuttal Published", "type": "main", "index": 0 }]]
+    },
+    "Mark Rebuttal Published": {
+      "main": [[{ "node": "Respond Rebuttal Published", "type": "main", "index": 0 }]]
+    },
+    "Webhook Run Auto Rebuttal": {
+      "main": [[{ "node": "Draft Daily Rebuttal to Supabase", "type": "main", "index": 0 }]]
+    },
+    "Draft Daily Rebuttal to Supabase": {
+      "main": [[{ "node": "Respond Auto Rebuttal", "type": "main", "index": 0 }]]
+    },
+    "Webhook Run Auto Comment": {
+      "main": [[{ "node": "Dispatch Comment & Update Status", "type": "main", "index": 0 }]]
+    },
+    "Webhook Run Single Comment": {
+      "main": [[{ "node": "Dispatch Comment & Update Status", "type": "main", "index": 0 }]]
+    },
+    "Dispatch Comment & Update Status": {
+      "main": [[{ "node": "Respond Comment Trigger", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "id": "cahyRebuttal2026",
+  "tags": []
+}

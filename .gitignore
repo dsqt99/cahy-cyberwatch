@@ -4,3 +4,18 @@ dist/
 config.json
 screenshots/
 *.log
+
+# env files hold API keys; only the examples are tracked
+.env
+.env.*
+!.env.example
+
+# FoxProfile runtime: venv, browser profiles with login cookies, logs
+foxprofile/.venv/
+foxprofile/camoufox_data/
+foxprofile/profiles.json
+foxprofile/logs/
+
+# dashboard build output and deps
+dashboard/node_modules/
+dashboard/dist/

@@ -1,0 +1,11 @@
+{
+  "name": "cahy-postgres-api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "CAHY CyberWatch Pure PostgreSQL REST & Auth Service",
+  "main": "server.js",
+  "dependencies": {
+    "pg": "^8.13.3"
+  }
+}
+

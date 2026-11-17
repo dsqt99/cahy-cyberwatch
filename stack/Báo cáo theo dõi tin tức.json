@@ -1,0 +1,483 @@
+{
+  "name": "Báo cáo theo dõi tin tức",
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT\n          n.id, n.content, n.link, n.publish_date as processed,\n          s.name as sentiment, src.name as source, n.keywords, n.summary\n        FROM news n\n        LEFT JOIN sentiments s ON n.sentiment_id = s.id\n        LEFT JOIN sources src ON n.source_id = src.id\n        WHERE n.deleted_at IS NULL\n        ORDER BY n.publish_date DESC\n        LIMIT 500",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        480,
+        352
+      ],
+      "id": "5278d4f8-87ca-47dc-8edd-fe9343a97c07",
+      "name": "Query News PostgreSQL",
+      "credentials": {
+        "postgres": {
+          "id": "cahyPostgresDb01",
+          "name": "PostgreSQL CAHY CyberWatch"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 23
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -176,
+        144
+      ],
+      "id": "caed932e-677b-45eb-bed3-b0de49aba9c5",
+      "name": "Schedule hàng ngày"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtDay": [
+                4
+              ],
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -176,
+        352
+      ],
+      "id": "5ace972e-a5dc-43bf-8668-672e670082d1",
+      "name": "Schedule tuần"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "months",
+              "triggerAtDayOfMonth": "=1",
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -176,
+        544
+      ],
+      "id": "9cf196b6-62c0-45d4-919b-ee007f95b13a",
+      "name": "Schedule tháng"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Dựa vào dữ liệu dưới đây, hãy phân tích xu hướng tin tức về tỉnh Thái Bình và Hưng Yên trong {{$json.timeRange}} và tạo một báo cáo ngắn gọn.\n\nTổng số bài viết: {{$json.stats.total}}\nTích cực: {{$json.stats.positive}}\nTiêu cực: {{$json.stats.negative}}\nTrung lập: {{$json.stats.neutral}}\n\nCác từ khóa nổi bật:\n{{$json.sortedKeywords.map(k => k.keyword + ' (' + k.count + ')').join(', ')}}\n\nHãy phân tích các vấn đề sau:\n1. Xu hướng tổng thể về tình hình an ninh trật tự tại tỉnh Thái Bình và Hưng Yên\n2. Các chủ đề nổi bật được đề cập\n3. So sánh giữa tin tích cực và tiêu cực\n4. Các vấn đề cần chú ý hoặc theo dõi tiếp\n\nĐịnh dạng báo cáo với các tiêu đề rõ ràng và thông tin được trình bày ngắn gọn, súc tích."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        912,
+        352
+      ],
+      "id": "be1742ab-133e-4e1f-b9a8-59b32d0723f1",
+      "name": "OpenAI1",
+      "alwaysOutputData": true,
+      "credentials": {
+        "openAiApi": {
+          "id": "36lKkzixUTg7ZoLf",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "html": "{{ $json.generatedHtml }}"
+      },
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1.2,
+      "position": [
+        1744,
+        352
+      ],
+      "id": "87d89f91-ff2b-4271-a0b4-6a5071ddc483",
+      "name": "HTML"
+    },
+    {
+      "parameters": {
+        "mode": "markdownToHtml",
+        "markdown": "={{ $('OpenAI1').item.json.message.content }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.markdown",
+      "typeVersion": 1,
+      "position": [
+        1312,
+        352
+      ],
+      "id": "50b7b39f-d19c-493d-9011-0df4268ab924",
+      "name": "Markdown",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "fromEmail": "qlttpa05@gmail.com",
+        "toEmail": "qlttpa05@gmail.com, capthaibinh.hy@gmail.com, nqvuong.ca@gmail.com",
+        "subject": "=Báo cáo tin tức về tỉnh Thái Bình & Hưng Yên -  {{ $('Code').item.json.timeRange }}",
+        "html": "={{ $json.html }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        1968,
+        352
+      ],
+      "id": "c081d3b5-5f57-4356-83aa-4b3f141996c6",
+      "name": "Send Email1",
+      "webhookId": "800f96cc-dbe5-4308-840a-d5c7572e2ea4",
+      "credentials": {
+        "smtp": {
+          "id": "xtEILCTR3BpoTsWM",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const inputData = $('Code').first().json.items;\nconst timeRange = $('Code').first().json.timeRange;\nconst stats = $('Code').first().json.stats;\nconst markdownData = $('Markdown').first().json.data;\nconst keywords = $('Code').first().json.sortedKeywords || []; // Dữ liệu từ khóa\n\nlet tableRowsHtml = '';\n\nif (inputData && Array.isArray(inputData) && inputData.length > 0) {\n    const itemsToDisplay = inputData;\n\n    if (itemsToDisplay.length === 0) {\n        tableRowsHtml = '<tr><td colspan=\"7\" style=\"text-align: center;\">Không có dữ liệu để hiển thị.</td></tr>';\n    } else {\n        itemsToDisplay.forEach(itemWrapper => {\n            const item = itemWrapper.json;\n\n            let sourceContent = item.source || '-';\n            if (typeof sourceContent === 'string' && (sourceContent.trim().toLowerCase().startsWith('<!doctype html') || sourceContent.trim().toLowerCase().startsWith('<html'))) {\n                try {\n                    const url = new item.link;\n                    sourceContent = `<a href=\"${item.link || '#'}\" target=\"_blank\">${url}</a><div class=\"source-full-html\">(Nguồn là trang HTML)</div>`;\n                } catch (e) {\n                    sourceContent = `<a href=\"${item.link || '#'}\" target=\"_blank\">Link</a><div class=\"source-full-html\">(Nguồn là trang HTML)</div>`;\n                }\n            }\n\n            tableRowsHtml += `\n                <tr>\n                    <td><a href=\"${item.link || '#'}\" target=\"_blank\">${item.title || 'Không có tiêu đề'}</a></td>\n                    <td>${sourceContent}</td>\n                    <td>${item.publishDate || '-'}</td>\n                    <td class=\"sentiment-${(item.sentiment || '-').toLowerCase()}\">${item.sentiment || '-'}</td>\n                </tr>\n            `;\n        });\n    }\n} else {\n    tableRowsHtml = '<tr><td colspan=\"7\" style=\"text-align: center;\">Lỗi: Dữ liệu đầu vào không hợp lệ.</td></tr>';\n}\n\nconst finalHtml = `\n<!DOCTYPE html>\n<html lang=\"vi\">\n<head>\n    <meta charset=\"UTF-8\">\n    <title>Báo cáo tin tức về tỉnh Thái Bình & Hưng Yên - ${timeRange}</title>\n    <style>\n        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; color: #333; }\n        .container { max-width: 800px; margin: 0 auto; }\n        h1 { color: #2c3e50; border-bottom: 1px solid #eee; padding-bottom: 10px; }\n        h2 { color: #3498db; margin-top: 20px; }\n        .stats { display: flex; justify-content: space-between; margin: 20px 0; }\n        .stat-box { background: #f9f9f9; padding: 15px; border-radius: 5px; width: 22%; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }\n        .positive { border-top: 3px solid #2ecc71; }\n        .negative { border-top: 3px solid #e74c3c; }\n        .neutral { border-top: 3px solid #f39c12; }\n        .total { border-top: 3px solid #3498db; }\n        .number { font-size: 24px; font-weight: bold; margin: 10px 0; }\n        .keyword-cloud { margin: 20px 0; }\n        .keyword { display: inline-block; margin: 5px; padding: 5px 10px; background: #eee; border-radius: 15px; font-size: 13px; }\n        table { width: 100%; border-collapse: collapse; margin: 20px 0; }\n        th, td { text-align: left; padding: 12px; border-bottom: 1px solid #ddd; }\n        th { background-color: #f2f2f2; }\n        tr:hover { background-color: #f5f5f5; }\n        .sentiment-positive { color: #2ecc71; }\n        .sentiment-negative { color: #e74c3c; }\n        .sentiment-neutral { color: #f39c12; }\n        .analysis { background: #f9f9f9; padding: 20px; border-radius: 5px; margin: 20px 0; }\n        .source-full-html { font-style: italic; color: #555; }\n    </style>\n</head>\n<body>\n    <div class=\"container\">\n        <h1>Báo cáo tin tức về tỉnh Thái Bình & Hưng Yên - ${timeRange}</h1>\n        \n        <div class=\"stats\">\n            <div class=\"stat-box total\">\n                <div>Tổng số</div>\n                <div class=\"number\">${stats.total}</div>\n                <div>bài viết</div>\n            </div>\n            <div class=\"stat-box positive\">\n                <div>Tích cực</div>\n                <div class=\"number\">${stats.positive}</div>\n                <div>bài viết</div>\n            </div>\n            <div class=\"stat-box neutral\">\n                <div>Trung lập</div>\n                <div class=\"number\">${stats.neutral}</div>\n                <div>bài viết</div>\n            </div>\n            <div class=\"stat-box negative\">\n                <div>Tiêu cực</div>\n                <div class=\"number\">${stats.negative}</div>\n                <div>bài viết</div>\n            </div>\n        </div>\n\n        <h2>Từ khóa nổi bật</h2>\n        <div class=\"keyword-cloud\">\n            ${keywords.map(k => `<span class=\"keyword\">${k.keyword} (${k.count})</span>`).join('')}\n        </div>\n\n        <h2>Phân tích xu hướng</h2>\n        <div class=\"analysis\">\n            ${markdownData}\n        </div>\n\n        <h2>Danh sách bài viết</h2>\n        <table>\n            <thead>\n                <tr>\n                    <th>Tiêu đề</th>\n                    <th>Nguồn</th>\n                    <th>Ngày đăng</th>\n                    <th>Đánh giá</th>\n                </tr>\n            </thead>\n            <tbody>\n                ${tableRowsHtml}\n            </tbody>\n        </table>\n    </div>\n</body>\n</html>\n`;\n\nreturn { json: { generatedHtml: finalHtml } };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1520,
+        352
+      ],
+      "id": "c3358ed0-cec8-49ce-8082-e7d448af8d8a",
+      "name": "Code1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst rawNow = new Date();\nconst agg = $('Aggregate').first()?.json?.data?.[0] || $('Aggregate').first()?.json || {};\nconst reportType = agg.report_type || 'daily';\n\nlet timeRange = '';\nlet startDate = new Date();\nlet endDate = new Date();\n\nif (reportType === 'daily') {\n  timeRange = `ngày ${rawNow.getDate()}/${rawNow.getMonth() + 1}/${rawNow.getFullYear()}`;\n  startDate.setHours(0, 0, 0, 0);\n  endDate.setHours(23, 59, 59, 999);\n} else if (reportType === 'weekly') {\n  const lastWeek = new Date(rawNow.getTime() - 7 * 86400000);\n  const lastDay = new Date(rawNow.getTime() - 86400000);\n  timeRange = `từ ngày ${lastWeek.getDate()}/${lastWeek.getMonth() + 1}/${lastWeek.getFullYear()} đến ngày ${lastDay.getDate()}/${lastDay.getMonth() + 1}/${lastDay.getFullYear()}`;\n  startDate = lastWeek;\n  endDate = lastDay;\n} else if (reportType === 'monthly') {\n  const m = rawNow.getMonth() === 0 ? 12 : rawNow.getMonth();\n  const y = rawNow.getMonth() === 0 ? rawNow.getFullYear() - 1 : rawNow.getFullYear();\n  timeRange = `tháng ${m}/${y}`;\n  startDate = new Date(y, m - 1, 1);\n  endDate = new Date(y, m, 0, 23, 59, 59);\n}\n\nconst listNews = [];\nfor (const it of items) {\n  const pStr = it.json.processed || it.json.publish_date;\n  if (!pStr) continue;\n  const pDate = new Date(pStr);\n  if (!isNaN(pDate.getTime()) && pDate >= startDate && pDate <= endDate) {\n    listNews.push(it);\n  }\n}\n\n// Fallback to recent items if range is strictly empty\nconst targetNews = listNews.length > 0 ? listNews : items.slice(0, 20);\n\nconst stats = {\n  total: targetNews.length,\n  positive: targetNews.filter(it => it.json.sentiment === 'Tích cực').length,\n  negative: targetNews.filter(it => it.json.sentiment === 'Tiêu cực').length,\n  neutral: targetNews.filter(it => it.json.sentiment === 'Trung lập').length,\n  bySource: {},\n  keywords: {}\n};\n\nfor (const it of targetNews) {\n  const src = it.json.source;\n  if (src) stats.bySource[src] = (stats.bySource[src] || 0) + 1;\n  const kwStr = it.json.keywords;\n  if (kwStr) {\n    kwStr.split(',').map(s => s.trim()).filter(Boolean).forEach(k => {\n      stats.keywords[k] = (stats.keywords[k] || 0) + 1;\n    });\n  }\n}\n\nconst sortedKeywords = Object.entries(stats.keywords)\n  .sort((a, b) => b[1] - a[1])\n  .slice(0, 10)\n  .map(([keyword, count]) => ({ keyword, count }));\n\nreturn [{\n  json: {\n    timeRange,\n    stats,\n    sortedKeywords,\n    items: targetNews.map(i => i.json)\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        704,
+        352
+      ],
+      "id": "a464e9cd-640c-4d0a-b1f6-32700508c433",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { report_type: 'daily' } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        48,
+        144
+      ],
+      "id": "368fc0e1-5c17-4627-aa96-58357a144a10",
+      "name": "Daily"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { report_type: 'weekly' } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        48,
+        352
+      ],
+      "id": "5a36c194-8490-4205-9016-80115e895b6e",
+      "name": "Weekly"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { report_type: 'monthly' } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        48,
+        544
+      ],
+      "id": "510c8ea6-cf52-42f6-b021-7dcfae71bd39",
+      "name": "Monthly"
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "include": "specifiedFields",
+        "fieldsToInclude": "report_type",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        272,
+        352
+      ],
+      "id": "e400c9c4-7fbd-4460-8a0c-c5404a92eb42",
+      "name": "Aggregate"
+    },
+    {
+      "parameters": {
+        "threadId": "2991710022690527986",
+        "type": 1,
+        "message": "={{ $('Markdown').item.json.message.content }}",
+        "quote": {},
+        "mentions": {}
+      },
+      "type": "n8n-nodes-zalo-tools.zaloSendMessage",
+      "typeVersion": 4,
+      "position": [
+        2224,
+        352
+      ],
+      "id": "bb48989f-7ea8-4e00-a98d-83c0ac5de570",
+      "name": "Zalo Send Message",
+      "credentials": {}
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Dựa vào dữ liệu dưới đây, hãy phân tích xu hướng tin tức về tỉnh Thái Bình và Hưng Yên trong {{$json.timeRange}} và tạo một báo cáo ngắn gọn.  Tổng số bài viết: {{$json.stats.total}} Tích cực: {{$json.stats.positive}} Tiêu cực: {{$json.stats.negative}} Trung lập: {{$json.stats.neutral}}  Các từ khóa nổi bật: {{$json.sortedKeywords.map(k => k.keyword + ' (' + k.count + ')').join(', ')}}  Hãy phân tích các vấn đề sau: 1. Xu hướng tổng thể về tình hình an ninh trật tự tại tỉnh Thái Bình và Hưng Yên 2. Các chủ đề nổi bật được đề cập 3. So sánh giữa tin tích cực và tiêu cực 4. Các vấn đề cần chú ý hoặc theo dõi tiếp  Định dạng báo cáo với các tiêu đề rõ ràng và thông tin được trình bày ngắn gọn, súc tích.",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        992,
+        672
+      ],
+      "id": "1e1f8ba4-a062-4bac-96cf-229b22faa496",
+      "name": "Basic LLM Chain",
+      "disabled": true
+    }
+  ],
+  "pinData": {
+    "Schedule hàng ngày": [
+      {
+        "json": {
+          "timestamp": "2025-07-08T23:00:53.006+07:00",
+          "Readable date": "July 8th 2025, 11:00:53 pm",
+          "Readable time": "11:00:53 pm",
+          "Day of week": "Tuesday",
+          "Year": "2025",
+          "Month": "July",
+          "Day of month": "08",
+          "Hour": "23",
+          "Minute": "00",
+          "Second": "53",
+          "Timezone": "Asia/Ho_Chi_Minh (UTC+07:00)"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Schedule hàng ngày": {
+      "main": [
+        [
+          {
+            "node": "Daily",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule tuần": {
+      "main": [
+        [
+          {
+            "node": "Weekly",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule tháng": {
+      "main": [
+        [
+          {
+            "node": "Monthly",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI1": {
+      "main": [
+        [
+          {
+            "node": "Markdown",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTML": {
+      "main": [
+        [
+          {
+            "node": "Send Email1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Markdown": {
+      "main": [
+        [
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code1": {
+      "main": [
+        [
+          {
+            "node": "HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "OpenAI1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Daily": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Weekly": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Monthly": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "Query News PostgreSQL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Email1": {
+      "main": [
+        [
+          {
+            "node": "Zalo Send Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        []
+      ]
+    },
+    "Query News PostgreSQL": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "808b3316-1d70-4cc3-bddf-1b4b5bbcb157",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "844a116902e43df933869fa70a9c4dff45f89d7ef757b509c408ffd1d8c73199"
+  },
+  "id": "usmsT6JmGpTuE2lR",
+  "tags": []
+}

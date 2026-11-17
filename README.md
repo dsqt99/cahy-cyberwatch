@@ -44,16 +44,16 @@
 
 | Khóa cấu hình | Mặc định | Mô tả |
 | --- | --- | --- |
-| `foxprofileDir` | `D:\code\foxprofile` | Đường dẫn thư mục mã nguồn FoxProfile (chứa `.venv`) |
+| `foxprofileDir` | `foxprofile` | Thư mục FoxProfile (chứa `.venv`). Đường dẫn tương đối tính từ thư mục app |
 | `foxprofilePort` | `8010` | Cổng REST API & Web Panel của FoxProfile |
 | `foxprofileToken` | `""` | Bearer token nếu FoxProfile bật xác thực |
 | `headed` | `true` | `true`: hiển thị cửa sổ trình duyệt khi chụp; `false`: chạy ẩn |
 | `webhookHost` / `webhookPort` | `127.0.0.1` / `5680` | Địa chỉ lắng nghe Webhook chụp ảnh & cookie cho n8n |
-| `screenshotDir` | `C:\Users\Administrator\n8n-docker\data\screenshot` | Thư mục gốc lưu ảnh bằng chứng số |
+| `screenshotDir` | `screenshots` | Thư mục lưu ảnh bằng chứng số. Phải khớp `SCREENSHOT_HOST_DIR` trong `stack/.env` |
 | `defaultProfile` | `""` | Profile mặc định (để trống = tự động chọn thông minh) |
 | `dashboardPort` | `5690` | Cổng phục vụ giao diện Dashboard cục bộ |
-| `n8nUrl` | `https://n8n.anm05.com` | Địa chỉ máy chủ n8n |
-| `n8nWebhookBase` | `https://n8n.anm05.com/webhook/` | Tiền tố URL gọi các webhook điều khiển n8n |
+| `n8nUrl` | `http://localhost:5678` | Địa chỉ máy chủ n8n |
+| `n8nWebhookBase` | `http://localhost:5678/webhook/` | Tiền tố URL gọi các webhook điều khiển n8n |
 | `n8nApiKey` | `""` | `X-N8N-API-KEY` từ n8n Settings > n8n API để bật/tắt workflows từ app |
 | `desktopOperatorPasscode` | `""` | Mã mở khóa quản trị viên máy trạm cục bộ (tùy chọn) |
 | `minimizeToTray` | `true` | Thu nhỏ xuống khay hệ thống khi đóng cửa sổ để giữ webhook chạy ngầm |
@@ -62,32 +62,45 @@
 
 ## Cài đặt, Kiểm thử & Đóng gói Portable `.exe`
 
-### 1. Chuẩn bị FoxProfile (Python 3.10+)
+Repo tự chứa đủ 4 phần, không cần thư mục ngoài:
+
+| Thư mục | Nội dung | File cấu hình |
+| --- | --- | --- |
+| `./` | App Electron (shell, webhook 5680, dashboard 5690) | `config.json` (mẫu: `config.example.json`) |
+| `dashboard/` | Giao diện React/Vite, build ra `dashboard/dist` | `dashboard/.env` (mẫu: `dashboard/.env.example`) |
+| `foxprofile/` | FoxProfile Antidetect (Python, bản vendored từ chienbm98/foxprofile) | `foxprofile/.env` (mẫu: `foxprofile/.env.example`) |
+| `stack/` | n8n + PostgreSQL + postgres-api (Docker) và các workflow JSON | `stack/.env` (mẫu: `stack/.env.example`) |
+
+Các file `.env`, `config.json`, `foxprofile/camoufox_data` (cookie đăng nhập), `foxprofile/profiles.json` không được commit.
+
+### 1. Cấu hình
 ```powershell
-git clone https://github.com/chienbm98/foxprofile.git D:\code\foxprofile
-cd D:\code\foxprofile
-git checkout v2.3.1
-python -m venv .venv
-.venv\Scripts\python -m pip install -r requirements.txt
-.venv\Scripts\python -m camoufox sync
-.venv\Scripts\python -m camoufox set official/stable/152.0.4-beta.31
-.venv\Scripts\python -m camoufox fetch
+copy config.example.json config.json
+copy dashboard\.env.example dashboard\.env
+copy foxprofile\.env.example foxprofile\.env
+copy stack\.env.example stack\.env
+```
+Điền API key vào `stack/.env` và `dashboard/.env`. `FOXPROFILE_API_TOKEN` trong `stack/.env` phải trùng `foxprofileToken` trong `config.json`.
+
+### 2. Cài đặt (Node 20+, Python 3.10+, Docker Desktop)
+```powershell
+npm run setup          # npm install, cài + build dashboard, tạo foxprofile/.venv
+foxprofile\.venv\Scripts\python -m camoufox fetch   # tải trình duyệt Camoufox (một lần mỗi máy)
 ```
 
-### 2. Import Workflow Điều khiển & Xác thực lên n8n
-Import file `../n8n_workflow/Auth & Điều khiển Hệ thống CyberWatch.json` vào máy chủ n8n và bật **Active** để kích hoạt các webhook `/webhook/auth-login`, `/webhook/trigger-collection`, `/webhook/run-trend-report`.
-
-### 3. Chạy phát triển & Kiểm thử tự động
+### 3. Bật n8n + PostgreSQL
 ```powershell
-cd cahy-cyberwatch
-npm install
-npm run build:dashboard   # Build giao diện Dashboard mới nhất
-npm test                  # Chạy bộ unit & HTTP integration tests
-npm run smoke             # Kiểm thử khởi động Electron + dịch vụ cục bộ
-npm start                 # Mở ứng dụng CAHY CyberWatch Desktop
+cd stack
+docker compose -f docker-compose.local.yml up -d --build
 ```
+n8n tại `http://localhost:5678`, postgres-api tại `http://localhost:5434`. Import các file `stack/*.json` vào n8n (bắt đầu với `Auth & Điều khiển Hệ thống CyberWatch.json`) rồi bật **Active**.
 
-### 4. Đóng gói bản Portable `.exe` cho Windows
+### 4. Chạy app
+```powershell
+npm test               # unit & HTTP integration tests
+npm start              # mở CAHY CyberWatch, app tự khởi động FoxProfile
+```
+### 5. Đóng gói bản Portable `.exe` cho Windows
 ```powershell
 cd cahy-cyberwatch
 npm run dist

@@ -1,0 +1,139 @@
+{
+  "name": "screenshot_news",
+  "nodes": [
+    {
+      "parameters": {
+        "multipleMethods": true,
+        "httpMethod": [
+          "GET",
+          "POST"
+        ],
+        "path": "screenshot_news",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -240,
+        0
+      ],
+      "id": "2cc0361b-6d30-4c6b-a495-6bc60a769b03",
+      "name": "Webhook",
+      "webhookId": "a8988397-d5bf-457f-a595-648d2958a689"
+    },
+    {
+      "parameters": {
+        "resource": "pageInteraction",
+        "operation": "smartCapture",
+        "profileId": "={{ $json.body?.profile_id || $json.query?.profile_id || '' }}",
+        "platformPreset": "news",
+        "url": "={{ $json.body?.url || $json.query?.url || '' }}",
+        "selectors": "body",
+        "outputFilePath": "",
+        "screenshotBaseDir": "D:\\code\\dsqt\\conganhungyen\\ai-social-tracking\\cahy-cyberwatch\\screenshots",
+        "sourceTag": "={{ $json.body?.source ?? $json.query?.source ?? '' }}",
+        "additionalOptions": {
+          "autoFallbackProfile": true,
+          "autoCreateProfile": true,
+          "scrollDelayMs": 1500,
+          "primaryTimeoutMs": 20000
+        }
+      },
+      "type": "n8n-nodes-foxprofile.foxProfile",
+      "typeVersion": 1,
+      "position": [
+        40,
+        0
+      ],
+      "id": "7f3a11e0-81c9-4e3f-9d1a-fb001f0dc003",
+      "name": "FoxProfile Browser",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "fieldsToAggregate": {
+          "fieldToAggregate": [
+            {
+              "fieldToAggregate": "outputFilePath"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        300,
+        0
+      ],
+      "id": "94944afd-432c-4b62-8218-8a5fb09358a0",
+      "name": "Aggregate"
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        560,
+        0
+      ],
+      "id": "73cb0aa8-6f6f-4d6c-ae15-2f6707de6376",
+      "name": "Respond to Webhook"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "FoxProfile Browser",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "FoxProfile Browser",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FoxProfile Browser": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "id": "lPeeQgBxIvXaBbDl",
+  "tags": []
+}

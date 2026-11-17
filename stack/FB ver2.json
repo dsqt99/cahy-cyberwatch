@@ -1,0 +1,1376 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 2,
+              "triggerAtMinute": 1
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -6752,
+        480
+      ],
+      "id": "89758465-89ab-41f4-9e50-a253fcf6cfcf",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "1023225e-a06e-474e-a43d-e18698f57081",
+              "leftValue": "={{ $json.output.message.content.relevance.toBoolean() }}",
+              "rightValue": "Thái Bình",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -2000,
+        144
+      ],
+      "id": "dbfc243f-f164-4bae-acf6-eb9389db54d7",
+      "name": "check liên quan"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -6048,
+        480
+      ],
+      "id": "c5af9e9c-c40e-4066-b5db-c53300ccc065",
+      "name": "Url"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -5216,
+        240
+      ],
+      "id": "de8dd05d-6698-4755-9643-f239a147d530",
+      "name": "Post Info"
+    },
+    {
+      "parameters": {
+        "resource": "page",
+        "operation": "getPagePosts",
+        "pageId": "={{ $json.metadata.page_id }}",
+        "limit": 20,
+        "since": "={{ $now.minus(3, 'hours') }}",
+        "until": "={{ $now }}"
+      },
+      "type": "n8n-nodes-social-facebook.facebookPage",
+      "typeVersion": 1,
+      "position": [
+        -5232,
+        464
+      ],
+      "id": "6d16e5d3-b4ec-4473-9f80-4e1f0785a28d",
+      "name": "Get Page Posts",
+      "credentials": {
+        "facebookApiBotzvn": {
+          "id": "V0kKd9RrZLVKeqxQ",
+          "name": "Facebook Credential account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "resource": "group",
+        "groupId": "={{ $json.metadata.page_id }}",
+        "limit": 20,
+        "since": "={{ $now.minus(3, 'hours') }}",
+        "until": "={{ $now }}"
+      },
+      "type": "n8n-nodes-social-facebook.facebookPage",
+      "typeVersion": 1,
+      "position": [
+        -5232,
+        784
+      ],
+      "id": "ad9d7184-bae9-43e0-bb8f-7a7ed7b181eb",
+      "name": "Get Group Posts",
+      "credentials": {
+        "facebookApiBotzvn": {
+          "id": "V0kKd9RrZLVKeqxQ",
+          "name": "Facebook Credential account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "resource": "user",
+        "operation": "getUserPosts",
+        "userId": "={{ $json.metadata.page_id }}",
+        "limit": 20,
+        "since": "={{ $now.minus(3, 'hours') }}",
+        "until": "={{ $now }}"
+      },
+      "type": "n8n-nodes-social-facebook.facebookPage",
+      "typeVersion": 1,
+      "position": [
+        -5232,
+        1056
+      ],
+      "id": "5ad624eb-341b-450f-8e3a-66c069824eed",
+      "name": "Get User Posts",
+      "credentials": {
+        "facebookApiBotzvn": {
+          "id": "V0kKd9RrZLVKeqxQ",
+          "name": "Facebook Credential account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "text": "Đây là ảnh được đăng trong 1 nhóm tin tức. Mô  tả tin tức trong ảnh",
+        "imageUrls": "=https://n8n.anm05.com/screenshots/facebook_hungyen/{{ $('screenshot1').item.json.outputFilePath[0].split(\"\\\\\").last() }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        -3008,
+        384
+      ],
+      "id": "510bc826-7f8d-4cdf-a3cd-cb4b7f936ce9",
+      "name": "Analyze image",
+      "credentials": {
+        "openAiApi": {
+          "id": "36lKkzixUTg7ZoLf",
+          "name": "OpenAi account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const posts = $input.first().json.posts.data;\nconst pageInfo = $('Url').first().json;\n\nreturn posts.map(post => ({\n  json: {\n    post: post,\n    page_info: pageInfo\n  }\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -4960,
+        464
+      ],
+      "id": "ed0508de-c500-48a1-98f9-f931cc3fbf06",
+      "name": "posts",
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "f64efef3-112a-4325-8069-54831bf2d4f1",
+              "leftValue": "={{ $json }}",
+              "rightValue": "",
+              "operator": {
+                "type": "object",
+                "operation": "empty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "fd850a90-6d48-4906-ad39-20350c1899da",
+              "leftValue": "={{ $('Post Info').item.json.post.created_time.toDateTime() }}",
+              "rightValue": "={{ $now.minus(3, 'hours') }}",
+              "operator": {
+                "type": "dateTime",
+                "operation": "afterOrEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -4672,
+        240
+      ],
+      "id": "c8ecf61d-7f38-40e6-8770-e21846d53cd7",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "jsCode": "const posts = $input.first().json.posts.data;\nconst pageInfo = $('Url').first().json;\n\nreturn posts.map(post => ({\n  json: {\n    post: post,\n    page_info: pageInfo\n  }\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -4960,
+        784
+      ],
+      "id": "d7da1cc5-2fd7-41b7-a3aa-c6be45af5e4a",
+      "name": "posts1",
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const posts = $input.first().json.posts.data;\nconst pageInfo = $('Url').first().json;\n\nreturn posts.map(post => ({\n  json: {\n    post: post,\n    page_info: pageInfo\n  }\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -4912,
+        1040
+      ],
+      "id": "fc4bc225-db73-4030-9e0d-b6e93932439f",
+      "name": "posts2",
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "url": "https://n8n-antidet.anm05.com/webhook/screenshot_fb",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "url",
+              "value": "=https://www.facebook.com/{{ $('Post Info').item.json.post.id }}"
+            },
+            {
+              "name": "profile_id",
+              "value": "3e596e2e-6ce1-41be-825d-6767ab2a2442"
+            },
+            {
+              "name": "source",
+              "value": "hungyen"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -3808,
+        224
+      ],
+      "id": "ff3be08a-fd1e-47a0-a68a-87c61685e364",
+      "name": "screenshot1",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "amount": "={{ (Math.random()*3).floor() + 1 }}",
+        "unit": "minutes"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -5760,
+        496
+      ],
+      "id": "c9fd35e4-898d-4b18-87a1-91c41dea51ee",
+      "name": "Wait",
+      "webhookId": "458229fa-7239-4941-a2f8-97d816bde3ed"
+    },
+    {
+      "parameters": {
+        "amount": "={{ (Math.random()*5).floor() + 1 }}"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -4384,
+        224
+      ],
+      "id": "afdcd1b3-7152-4999-a4b8-4d5d38d6b775",
+      "name": "Wait1",
+      "webhookId": "80738be1-d31a-4f83-81e3-0c822c261329"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT * FROM sentiments WHERE deleted_at IS NULL AND name = $1 LIMIT 1",
+        "options": {
+          "queryReplacement": "={{ [$('OpenAI').item.json.message.content.sentiment] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -1600,
+        144
+      ],
+      "id": "e3e68eba-f7a4-4cdd-993a-970bc9d2ce45",
+      "name": "get_sentimentId",
+      "credentials": {
+        "postgres": {
+          "id": "cahyPostgresDb01",
+          "name": "PostgreSQL CAHY CyberWatch"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO news (source_id, content, link, publish_date, sentiment_id, summary, keywords, screenshot, channel) VALUES ($1::uuid, $2, $3, COALESCE(NULLIF($4, '')::timestamp, CURRENT_TIMESTAMP), $5::uuid, $6, $7, $8, 'ANTT') RETURNING *",
+        "options": {
+          "queryReplacement": "={{ [ $('Post Info').first().json.page_info.id, $('Post Info').first().json.post.message, `${$('Post Info').item.json.page_info.link}/posts/${$('Post Info').item.json.post.id.split('_').last()}`, String($('Post Info').first().json.post.created_time.toDateTime().toLocal()), $('get_sentimentId').item.json.id, $('OpenAI').item.json.message.content.summary, $('OpenAI').item.json.message.content.keywords.join(', '), $('screenshot1').item.json.outputFilePath?.length > 0 ? `http://localhost:5678/webhook/screenshot-file?path=${$('screenshot1').item.json.outputFilePath[0].split(/[/\\\\]/).slice(-2).join('/')}` : '' ] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -1376,
+        144
+      ],
+      "id": "6bdb36ed-672d-46f3-ae62-d8e0550217eb",
+      "name": "Create a row",
+      "credentials": {
+        "postgres": {
+          "id": "cahyPostgresDb01",
+          "name": "PostgreSQL CAHY CyberWatch"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT * FROM sources WHERE deleted_at IS NULL AND parent_id = 'c315ac35-4378-43b8-8cb1-3885034cc929'::uuid",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -6432,
+        480
+      ],
+      "id": "a258dd94-6ac4-42a4-b00d-0a2994d5b439",
+      "name": "Get many rows",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "postgres": {
+          "id": "cahyPostgresDb01",
+          "name": "PostgreSQL CAHY CyberWatch"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT id FROM news WHERE link = ANY($1::text[]) AND deleted_at IS NULL LIMIT 1",
+        "options": {
+          "queryReplacement": "={{ [ [ `https://www.facebook.com/${$('Post Info').item.json.post.id}`, `${$('Post Info').item.json.page_info.link}/${$('Post Info').item.json.post.id.split('_').last()}`, `${$('Post Info').item.json.page_info.link}/posts/${$('Post Info').item.json.post.id.split('_').last()}` ] ] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -4928,
+        240
+      ],
+      "id": "0c956c1e-a9f8-4fc9-afba-f80868155271",
+      "name": "Get many rows1",
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "cahyPostgresDb01",
+          "name": "PostgreSQL CAHY CyberWatch"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://vllm.anm05.com/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.OPENAI_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"qwen-3.6-35b-a3b\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": [\n        {\n          \"type\": \"text\",\n          \"text\": {{ $('prompt').item.json.system_prompt.toJsonString() }}\n        }\n      ]\n    },\n    {\n      \"role\": \"user\",\n      \"content\": [\n        {\n          \"type\": \"text\",\n          \"text\": {{ ($('prompt').item.json.user_query + \"\\n\\nLink ảnh chụp màn hình bên dưới:\").toJsonString() }} \n        },\n        {\n          \"type\": \"image_url\",\n          \"image_url\": {\n            \"url\": \"https://n8n.anm05.com/screenshots/facebook_hungyen/{{ $('screenshot1').item.json.outputFilePath[0].split(\"\\\\\").last() }}\"\n          }\n        }\n      ]\n    }\n  ]\n}",
+        "options": {
+          "redirect": {
+            "redirect": {}
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -3328,
+        208
+      ],
+      "id": "f1acba04-e104-4ca7-90ea-39bc478ae43d",
+      "name": "analyze",
+      "retryOnFail": true,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.type_id }}",
+                    "rightValue": "dd716c65-cabd-4e0e-8f6a-11f8e0f35302",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "33547b52-2d5c-47fc-b48d-b79e32f73653"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "page"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "3b3c7a4b-ca58-4226-90c4-9aa10f6a2ee9",
+                    "leftValue": "={{ $json.type_id }}",
+                    "rightValue": "52a72140-6a6c-42d3-adb9-c02d4cc75869",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "group"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "b5fae3dc-b787-4679-8f2c-8b864b0fb1d3",
+                    "leftValue": "={{ $json.type_id }}",
+                    "rightValue": "172aaede-93c7-441e-8454-0548de2c92c1",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "person"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -5552,
+        480
+      ],
+      "id": "110b046d-521d-4e63-b65a-1fdfc8255d11",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "jsCode": "const output = $input.first().json.choices[0].message.content;\n\nconst cleanOutput = output\n  .replace(/^```json\\s*/i, \"\")\n  .replace(/\\s*```$/, \"\")\n  .trim();\n\nconst outputCleaned = JSON.parse(cleanOutput);\n\nreturn [\n  {\n    json: {\n      message: {\n        content: outputCleaned,\n      },\n    },\n  },\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2816,
+        144
+      ],
+      "id": "b7668cb9-122b-4aab-b3bb-b3955e629a38",
+      "name": "OpenAI",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5.4-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-5.4-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "={{ $('prompt').item.json.system_prompt }}",
+              "role": "system"
+            },
+            {
+              "content": "=Nội dung bài viết:\n{{ $('Post Info').first().json.post.message }}\n\nNội dung ảnh chụp màn hình tin:\n{{ $json.content || \"\" }}"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        -2768,
+        384
+      ],
+      "id": "e6eea2c4-a154-41b8-b5e2-f312f0e551af",
+      "name": "OpenAI1",
+      "retryOnFail": true,
+      "alwaysOutputData": false,
+      "notesInFlow": false,
+      "credentials": {
+        "openAiApi": {
+          "id": "36lKkzixUTg7ZoLf",
+          "name": "OpenAi account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "chatId": "-5335154740",
+        "text": "={{ $json.error }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -4544,
+        800
+      ],
+      "id": "68467869-9a29-4925-b157-7815edb5a33d",
+      "name": "Send a text message1",
+      "webhookId": "cff6df04-d894-441f-8089-b5198240ed5b",
+      "credentials": {
+        "telegramApi": {
+          "id": "EEl6ydmsTcCXGcwP",
+          "name": "Telegram account dsqt99"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "00d3fb43-1b2f-4771-8c50-cb2926297453",
+              "name": "system_prompt",
+              "value": "Bạn là chuyên gia phân tích nội dung từ nguồn bài viết trên trang cá nhân, nhóm, trang Facebook.  \nNhiệm vụ của bạn là kiểm tra nội dung bài viết có thực sự liên quan đến tình hình an ninh trật tự tỉnh Hưng Yên hoặc tỉnh Thái Bình không.\nHãy đánh giá nó thuộc loại nào: \"Tích cực\", \"Tiêu cực\" về tình hình an ninh trật tự hay tin tức nóng cũng như tóm tắt nội dung chính của bài viết trong 3-5 câu. \n\n** LƯU Ý: ** \n- Bỏ qua các bài viết có nội dung không liên quan đến tình hình an ninh trật tự  tỉnh Hưng Yên hoặc tỉnh Thái Bình.  \n- Chỉ trả lời bằng tiếng Việt.\n- Nếu nội dung liên quan đến nội dung hot hiện tại \"Bầu cử quốc hộ và hội đồng nhân dân\" thì keyword là \"bầu cử\"\n- Bỏ qua các bài viết bán hàng online không có dấu hiệu gây rối.\n\nTrả về kết quả theo định dạng JSON hợp lệ, không kèm chú thích.\nNếu bài viết liên quan tình hình an ninh trật tự hay tin tức nóng tỉnh Hưng Yên hoặc tỉnh Thái Bình:\n{   \n  \"relevance\": true,\n  \"sentiment\": \"Tích cực/Tiêu cực\",   \n  \"summary\": \"Tóm tắt nội dung\",\n  \"keywords\": [\"từ khóa 1\", \"từ khóa 2\", \"từ khóa 3\"] \n}  \nNếu không liên quan đến tình hình an ninh trật tự:\n{   \n  \"relevance\": false,\n  \"sentiment\": \"\",   \n  \"summary\": \"\",\n  \"keywords\": []\n}",
+              "type": "string"
+            },
+            {
+              "id": "5e837cd1-e0f6-4d96-99c8-205a4c1091bf",
+              "name": "user_query",
+              "value": "=Nội dung bài viết: {{ $('Post Info').first().json.post.message }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -4096,
+        224
+      ],
+      "id": "e51241f9-7460-4ac0-a8f9-8c084434d714",
+      "name": "prompt"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://vllm.anm05.com/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.OPENAI_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"qwen-3.6-35b-a3b\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": [\n        {\n          \"type\": \"text\",\n          \"text\": {{ $('prompt').item.json.system_prompt.toJsonString() }}\n        }\n      ]\n    },\n    {\n      \"role\": \"user\",\n      \"content\": [\n        {\n          \"type\": \"text\",\n          \"text\": {{ $('prompt').item.json.user_query.toJsonString() }}\n        }\n      ]\n    }\n  ]\n}",
+        "options": {
+          "redirect": {
+            "redirect": {}
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -3328,
+        832
+      ],
+      "id": "36944a2d-dec5-4fdf-bc33-19045f6a3128",
+      "name": "analyze1",
+      "retryOnFail": true,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const output = $input.first().json.choices[0].message.content;\n\nconst cleanOutput = output\n  .replace(/^```json\\s*/i, \"\")\n  .replace(/\\s*```$/, \"\")\n  .trim();\n\nconst outputCleaned = JSON.parse(cleanOutput);\n\nreturn [\n  {\n    json: {\n      message: {\n        content: outputCleaned,\n      },\n    },\n  },\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2816,
+        656
+      ],
+      "id": "833f9d70-7219-459e-aa9f-0a5ecd0cc306",
+      "name": "OpenAI2",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5.4-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-5.4-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "={{ $('prompt').item.json.system_prompt }}",
+              "role": "system"
+            },
+            {
+              "content": "=Nội dung bài viết:\n{{ $('Post Info').item.json.post.message }}"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        -2880,
+        944
+      ],
+      "id": "8daf6016-2a41-498b-b533-e04cb6526662",
+      "name": "OpenAI3",
+      "retryOnFail": true,
+      "alwaysOutputData": false,
+      "notesInFlow": false,
+      "credentials": {
+        "openAiApi": {
+          "id": "36lKkzixUTg7ZoLf",
+          "name": "OpenAi account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "84639245-b143-43be-9133-b5054efa3ccd",
+              "leftValue": "={{ $json.outputFilePath }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "array",
+                "operation": "lengthGt",
+                "rightType": "number"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -3584,
+        224
+      ],
+      "id": "2ba6bd12-77ad-4bb9-8388-56e6976c978a",
+      "name": "If2"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "af6f2a76-3a2a-458a-877d-1d7e70449235",
+              "name": "output",
+              "value": "={{ $json }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -2304,
+        128
+      ],
+      "id": "fe87040e-f9d8-41de-997c-bdf329c7b6ef",
+      "name": "output"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "764465aa-f0e2-4650-a01e-c6956eebb07d",
+              "leftValue": "={{ $json.keywords.toLowerCase().split(', ') }}",
+              "rightValue": "kinh tế",
+              "operator": {
+                "type": "array",
+                "operation": "contains",
+                "rightType": "any"
+              }
+            },
+            {
+              "id": "fd6fa6a4-84b3-45f6-9526-6bcb99f3b0ab",
+              "leftValue": "={{ $json.keywords.toLowerCase().split(', ') }}",
+              "rightValue": "buôn lậu",
+              "operator": {
+                "type": "array",
+                "operation": "contains",
+                "rightType": "any"
+              }
+            },
+            {
+              "id": "2ec16d00-baa3-4ff4-875b-8ef92a8ddac2",
+              "leftValue": "={{ $json.keywords.toLowerCase().split(', ') }}",
+              "rightValue": "thương mại điện tử",
+              "operator": {
+                "type": "array",
+                "operation": "contains",
+                "rightType": "any"
+              }
+            },
+            {
+              "id": "c37c0c4e-c431-4f5f-b05e-9f142910fa8c",
+              "leftValue": "={{ $json.keywords.toLowerCase().split(', ') }}",
+              "rightValue": "tham nhũng",
+              "operator": {
+                "type": "array",
+                "operation": "contains",
+                "rightType": "any"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -1120,
+        144
+      ],
+      "id": "ec34ace7-998e-4dc6-a69b-d18344d09a5d",
+      "name": "If1"
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get many rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check liên quan": {
+      "main": [
+        [
+          {
+            "node": "get_sentimentId",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Post Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Url": {
+      "main": [
+        [
+          {
+            "node": "Post Info",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post Info": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Get many rows1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Page Posts": {
+      "main": [
+        [
+          {
+            "node": "posts",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Url",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Group Posts": {
+      "main": [
+        [
+          {
+            "node": "posts1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send a text message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get User Posts": {
+      "main": [
+        [
+          {
+            "node": "posts2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Url",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze image": {
+      "main": [
+        [
+          {
+            "node": "OpenAI1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Post Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "posts": {
+      "main": [
+        [
+          {
+            "node": "Url",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Wait1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Post Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "posts1": {
+      "main": [
+        [
+          {
+            "node": "Url",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "posts2": {
+      "main": [
+        [
+          {
+            "node": "Url",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "screenshot1": {
+      "main": [
+        [
+          {
+            "node": "If2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "analyze1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait1": {
+      "main": [
+        [
+          {
+            "node": "prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get_sentimentId": {
+      "main": [
+        [
+          {
+            "node": "Create a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a row": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many rows": {
+      "main": [
+        [
+          {
+            "node": "Url",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many rows1": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Post Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "analyze": {
+      "main": [
+        [
+          {
+            "node": "OpenAI",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Analyze image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Get Page Posts",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Group Posts",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get User Posts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI": {
+      "main": [
+        [
+          {
+            "node": "output",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Post Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI1": {
+      "main": [
+        [
+          {
+            "node": "output",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Post Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message1": {
+      "main": [
+        [
+          {
+            "node": "Url",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "prompt": {
+      "main": [
+        [
+          {
+            "node": "screenshot1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "analyze1": {
+      "main": [
+        [
+          {
+            "node": "OpenAI2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "OpenAI3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI2": {
+      "main": [
+        [
+          {
+            "node": "output",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Post Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI3": {
+      "main": [
+        [
+          {
+            "node": "output",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Post Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If2": {
+      "main": [
+        [
+          {
+            "node": "analyze",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "analyze1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "output": {
+      "main": [
+        [
+          {
+            "node": "check liên quan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Post Info",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Post Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {
+    "Schedule Trigger": [
+      {
+        "timestamp": "2026-09-21T14:01:31.005+07:00",
+        "Readable date": "September 21st 2026, 2:01:31 pm",
+        "Readable time": "2:01:31 pm",
+        "Day of week": "Monday",
+        "Year": "2026",
+        "Month": "September",
+        "Day of month": "21",
+        "Hour": "14",
+        "Minute": "01",
+        "Second": "31",
+        "Timezone": "Asia/Ho_Chi_Minh (UTC+07:00)"
+      }
+    ]
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "aiBuilderAssisted": true,
+    "builderVariant": "mcp",
+    "instanceId": "844a116902e43df933869fa70a9c4dff45f89d7ef757b509c408ffd1d8c73199"
+  },
+  "id": "wsiHEMPNwwDuyIcz",
+  "name": "Theo dõi tin tức Facebook"
+}

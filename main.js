@@ -50,13 +50,14 @@ const CONFIG_FILE = path.join(APP_DIR, 'config.json');
 const ICON_PATH = path.join(__dirname, 'assets', process.platform === 'win32' ? 'icon.ico' : 'icon.png');
 
 const DEFAULT_CONFIG = {
-  foxprofileDir: 'D:\\code\\foxprofile',
+  // bundled copy in the repo; config.json may override (relative paths resolve against APP_DIR)
+  foxprofileDir: path.join(APP_DIR, 'foxprofile'),
   foxprofilePort: 8010,
   foxprofileToken: '',
   headed: true,
   webhookHost: '127.0.0.1',
   webhookPort: 5680,
-  screenshotDir: path.join(__dirname, 'screenshots'),
+  screenshotDir: path.join(APP_DIR, 'screenshots'),
   defaultProfile: '',
   dashboardPort: 5690,
   n8nUrl: 'http://localhost:5678',
@@ -80,6 +81,9 @@ function loadConfig() {
     }
   }
   const merged = { ...DEFAULT_CONFIG, ...disk };
+  for (const k of ['foxprofileDir', 'screenshotDir']) {
+    if (merged[k]) merged[k] = path.resolve(APP_DIR, merged[k]);
+  }
   if (!merged.n8nWebhookBase && merged.n8nUrl) {
     merged.n8nWebhookBase = `${String(merged.n8nUrl).replace(/\/+$/, '')}/webhook/`;
   }
@@ -262,7 +266,7 @@ const foxManager = {
 // ===== Dashboard Static HTTP Server (127.0.0.1:5690) =====
 const DASHBOARD_DIR = app.isPackaged
   ? path.join(process.resourcesPath, 'dashboard')
-  : path.join(__dirname, '..', 'social-tracking-dashboard', 'dist');
+  : path.join(__dirname, 'dashboard', 'dist');
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',

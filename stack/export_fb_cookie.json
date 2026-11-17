@@ -1,0 +1,100 @@
+{
+  "name": "export_fb_cookie",
+  "nodes": [
+    {
+      "parameters": {
+        "multipleMethods": true,
+        "httpMethod": [
+          "GET",
+          "POST"
+        ],
+        "path": "export_fb_cookie",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -240,
+        0
+      ],
+      "id": "0d1f6a52-7c3e-4b8e-9a51-2f4e8c1b7a01",
+      "name": "Webhook",
+      "webhookId": "5b2c9e10-3a47-4f6d-8e21-9c0b7d4a6e02"
+    },
+    {
+      "parameters": {
+        "resource": "cookie",
+        "operation": "exportFbCookie",
+        "profileId": "={{ $json.body?.profile_id || $json.query?.profile_id || '' }}",
+        "additionalOptions": {
+          "autoFallbackProfile": true,
+          "stopIfRunning": true
+        }
+      },
+      "type": "n8n-nodes-foxprofile.foxProfile",
+      "typeVersion": 1,
+      "position": [
+        40,
+        0
+      ],
+      "id": "7f3a11e0-81c9-4e3f-9d1a-fb001f0dc005",
+      "name": "FoxProfile Browser",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "respondWith": "firstIncomingItem",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        320,
+        0
+      ],
+      "id": "a1f5c3e8-9d2b-4e7a-b6c4-8e1d3f9a2b06",
+      "name": "Respond"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "FoxProfile Browser",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "FoxProfile Browser",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FoxProfile Browser": {
+      "main": [
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataSuccessExecution": "none"
+  },
+  "id": "exFbCkFox0012026",
+  "tags": []
+}

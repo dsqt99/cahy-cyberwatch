@@ -1,0 +1,172 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 25% 97.5%;
+    --foreground: 222 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    /* Singular Primary Brand Accent: Command Cobalt */
+    --primary: 221 83% 50%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 214 25% 94%;
+    --secondary-foreground: 222 47% 14%;
+
+    --muted: 214 25% 94.5%;
+    --muted-foreground: 215 18% 42%;
+
+    --accent: 214 32% 93%;
+    --accent-foreground: 222 47% 11%;
+
+    --destructive: 0 76% 52%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214 24% 88.5%;
+    --input: 214 24% 87%;
+    --ring: 221 83% 50%;
+
+    --radius: 0.625rem;
+
+    --chrome: 214 22% 92.5%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 222 35% 18%;
+    --sidebar-primary: 221 83% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 214 30% 95%;
+    --sidebar-accent-foreground: 222 47% 11%;
+    --sidebar-border: 214 24% 89%;
+    --sidebar-ring: 221 83% 50%;
+  }
+
+  .dark {
+    --background: 222 42% 6.5%;
+    --foreground: 210 35% 96%;
+
+    --card: 222 35% 9.5%;
+    --card-foreground: 210 35% 96%;
+
+    --popover: 222 36% 10%;
+    --popover-foreground: 210 35% 96%;
+
+    --primary: 217 91% 60%;
+    --primary-foreground: 222 47% 8%;
+
+    --secondary: 218 28% 15%;
+    --secondary-foreground: 210 35% 94%;
+
+    --muted: 218 28% 14.5%;
+    --muted-foreground: 215 18% 64%;
+
+    --accent: 218 28% 16%;
+    --accent-foreground: 210 35% 96%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 218 25% 17.5%;
+    --input: 218 25% 18.5%;
+    --ring: 217 91% 60%;
+
+    --chrome: 224 45% 5%;
+    --sidebar-background: 222 40% 8%;
+    --sidebar-foreground: 214 28% 88%;
+    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary-foreground: 222 47% 8%;
+    --sidebar-accent: 218 28% 14%;
+    --sidebar-accent-foreground: 210 35% 96%;
+    --sidebar-border: 218 25% 16%;
+    --sidebar-ring: 217 91% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+  }
+
+  /* Keyboard focus ring for every control; mouse clicks stay clean */
+  :where(a, button, [role="button"], [role="tab"], [role="menuitem"], summary, [tabindex]:not([tabindex="-1"])):focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+}
+
+@layer utilities {
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Dashboard card: single 12px surface (was a 20px double-bezel; too heavy for dense data UI).
+     Class names kept so call sites stay untouched. */
+  .doppelrand-shell {
+    @apply relative rounded-xl border border-border/80 bg-card shadow-[0_1px_2px_hsl(var(--foreground)/0.04)] transition-colors duration-200 motion-reduce:transition-none;
+    transition-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  .doppelrand-shell:hover {
+    @apply border-border;
+  }
+
+  .doppelrand-core {
+    @apply rounded-xl bg-card text-card-foreground p-5 h-full flex flex-col justify-between;
+  }
+
+  .surface-panel {
+    @apply bg-card text-card-foreground border border-border/80 rounded-xl shadow-[0_2px_8px_rgba(15,23,42,0.04)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.35)] shadow-[inset_0_1px_1px_rgba(255,255,255,0.6)] dark:shadow-[inset_0_1px_1px_rgba(255,255,255,0.08)];
+  }
+
+  .tactile-press {
+    @apply transition-all duration-150 active:scale-[0.98];
+  }
+
+  .eyebrow-tag {
+    @apply font-mono text-[9.5px] uppercase tracking-[0.18em] font-bold;
+  }
+}
+
+/* Custom subtle scrollbars for operational density */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.45);
+}
+
+/* Hide number input arrows cleanly */
+.hide-arrows::-webkit-outer-spin-button,
+.hide-arrows::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.hide-arrows {
+  -moz-appearance: textfield;
+}

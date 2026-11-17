@@ -1,0 +1,190 @@
+{
+  "name": "Auth & Điều khiển Hệ thống CAHY CyberWatch",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "auth-login",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-420, -240],
+      "id": "cahy-auth-webhook-01",
+      "name": "Webhook Auth Login",
+      "webhookId": "cahy-auth-login-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Xác thực tài khoản người vận hành CAHY CyberWatch trực tiếp trên PostgreSQL (bảng app_users / profiles)\nconst body = $input.first().json.body || $input.first().json || {};\nconst email = String(body.email || '').trim().toLowerCase();\nconst password = String(body.password || '');\nconst client = String(body.client || 'cahy-cyberwatch');\nconst PG_API = ($env.POSTGRES_API_URL || 'http://postgres_api:5434').replace(/\\/+$/, '');\n\nif (!email || !password) {\n  return [{ json: { statusCode: 400, payload: { ok: false, error: 'Thiếu email hoặc mật khẩu.' } } }];\n}\n\ntry {\n  const authRes = await this.helpers.httpRequest({\n    method: 'POST',\n    url: `${PG_API}/api/auth/login`,\n    headers: { 'Content-Type': 'application/json' },\n    body: { email, password },\n    json: true,\n  });\n\n  return [{\n    json: {\n      statusCode: 200,\n      payload: {\n        ok: true,\n        provider: 'postgresql',\n        client,\n        issued_at: new Date().toISOString(),\n        access_token: authRes.access_token,\n        user: authRes.user,\n      },\n    },\n  }];\n} catch (e) {\n  return [{\n    json: {\n      statusCode: 401,\n      payload: {\n        ok: false,\n        error: 'Email hoặc mật khẩu không chính xác (PostgreSQL RBAC).',\n      },\n    },\n  }];\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-140, -240],
+      "id": "cahy-auth-verify-code-02",
+      "name": "Verify Credentials & RBAC"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json.payload) }}",
+        "options": {
+          "responseCode": "={{ $json.statusCode || 200 }}"
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [140, -240],
+      "id": "cahy-auth-respond-03",
+      "name": "Respond Auth Login"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "trigger-collection",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-420, 0],
+      "id": "cahy-trigger-collection-04",
+      "name": "Webhook Trigger Collection",
+      "webhookId": "cahy-trigger-collection-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body || $input.first().json || {};\nconst headers = $input.first().json.headers || {};\nconst PG_API = ($env.POSTGRES_API_URL || 'http://postgres_api:5434').replace(/\\/+$/, '');\n\nlet pendingQueueCount = 0;\ntry {\n  const qRes = await this.helpers.httpRequest({\n    method: 'GET',\n    url: `${PG_API}/api/news-queue?status=pending`,\n    json: true,\n  });\n  if (typeof qRes?.count === 'number') pendingQueueCount = qRes.count;\n  else if (Array.isArray(qRes?.data)) pendingQueueCount = qRes.data.length;\n} catch {}\n\nreturn [{\n  json: {\n    ok: true,\n    engine: 'localhost-n8n-postgresql',\n    message: `Đã phát lệnh quét chủ động (${body.target || 'all'}) cho kênh ${body.channel || 'ANTT'} trên PostgreSQL (hàng đợi chờ: ${pendingQueueCount})`,\n    target: body.target || 'all',\n    channel: body.channel || 'ANTT',\n    pendingQueueCount,\n    requestedBy: headers['x-cahy-user'] || 'operator',\n    triggeredAt: new Date().toISOString()\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-140, 0],
+      "id": "cahy-trigger-code-05",
+      "name": "Prepare Scan Dispatch"
+    },
+    {
+      "parameters": {
+        "respondWith": "firstIncomingItem",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [140, 0],
+      "id": "cahy-trigger-respond-06",
+      "name": "Respond Collection Trigger"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "run-trend-report",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-420, 240],
+      "id": "cahy-trend-webhook-07",
+      "name": "Webhook Run Trend Report",
+      "webhookId": "cahy-run-trend-report-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body || $input.first().json || {};\nconst period = ['day', 'week', 'month'].includes(body.period) ? body.period : 'day';\nconst rawChannel = String(body.channel || 'ANTT');\nconst dbChannel = rawChannel === 'Phản Động' || rawChannel === 'PhanDong' ? 'PhanDong' : 'ANTT';\n\nconst PG_API = ($env.POSTGRES_API_URL || 'http://postgres_api:5434').replace(/\\/+$/, '');\nconst OPENAI_API_KEY = $env.OPENAI_API_KEY || '';\nconst OPENAI_BASE_URL = ($env.OPENAI_BASE_URL || 'https://api.openai.com/v1').replace(/\\/+$/, '');\nconst OPENAI_MODEL = $env.OPENAI_MODEL || 'gpt-4o-mini';\n\nconst pad = (n) => String(n).padStart(2, '0');\nconst fmtLocal = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;\n\nconst now = new Date();\nconst days = period === 'day' ? 1 : period === 'week' ? 7 : 30;\nconst start = new Date(now.getTime() - days * 86400000);\nconst periodStart = fmtLocal(start);\nconst periodEnd = fmtLocal(now);\n\nlet articles = [];\ntry {\n  const res = await this.helpers.httpRequest({\n    method: 'GET',\n    url: `${PG_API}/api/news/paginated?page=1&limit=200&channel=${encodeURIComponent(dbChannel)}&startDate=${encodeURIComponent(periodStart)}`,\n    json: true,\n  });\n  if (Array.isArray(res?.data)) articles = res.data;\n} catch {}\n\nlet positive = 0, negative = 0, neutral = 0;\nconst kwMap = {};\nfor (const a of articles) {\n  const sName = a.sentiment?.name || '';\n  if (sName === 'Tích cực') positive++;\n  else if (sName === 'Tiêu cực') negative++;\n  else neutral++;\n  if (a.keywords) {\n    for (const rawKw of String(a.keywords).split(',')) {\n      const kw = rawKw.trim();\n      if (kw) kwMap[kw] = (kwMap[kw] || 0) + 1;\n    }\n  }\n}\n\nconst topKeywords = Object.entries(kwMap)\n  .map(([keyword, count]) => ({ keyword, count }))\n  .sort((a, b) => b.count - a.count)\n  .slice(0, 12);\n\nconst stats = {\n  total: articles.length,\n  positive,\n  negative,\n  neutral,\n  top_keywords: topKeywords,\n};\n\nconst sampleSummaries = articles\n  .slice(0, 18)\n  .map((a, idx) => `${idx + 1}. [${a.sentiment?.name || 'Trung lập'}] ${a.summary || ''}`)\n  .join('\\n');\n\nlet reportContent = `### Báo cáo Tổng hợp Xu hướng (${period.toUpperCase()} - ${dbChannel})\\n\\n- **Tổng số tin bài**: ${stats.total} (Tích cực: ${positive}, Trung lập: ${neutral}, Tiêu cực: ${negative})\\n- **Từ khóa trọng tâm**: ${topKeywords.map(k => `${k.keyword} (${k.count})`).join(', ') || 'Chưa phát sinh từ khóa mới'}`;\n\nif (OPENAI_API_KEY) {\n  try {\n    const aiRes = await this.helpers.httpRequest({\n      method: 'POST',\n      url: `${OPENAI_BASE_URL}/chat/completions`,\n      headers: {\n        Authorization: `Bearer ${OPENAI_API_KEY}`,\n        'Content-Type': 'application/json',\n      },\n      body: {\n        model: OPENAI_MODEL,\n        messages: [\n          {\n            role: 'system',\n            content: 'Bạn là chuyên gia phân tích thông tin không gian mạng của Công an tỉnh Hưng Yên. Hãy viết báo cáo xu hướng chuyên nghiệp bằng tiếng Việt (định dạng Markdown rõ ràng, súc tích, không dùng emoji).',\n          },\n          {\n            role: 'user',\n            content: `Phân tích báo cáo kỳ ${period} (${periodStart} -> ${periodEnd}) cho kênh ${dbChannel}.\\nThống kê: Tổng ${stats.total} bài (Tích cực: ${positive}, Tiêu cực: ${negative}, Trung lập: ${neutral}).\\nTừ khóa nổi bật: ${topKeywords.map(k => `${k.keyword} (${k.count})`).join(', ') || 'Không có'}.\\nTóm tắt các tin bài tiêu biểu:\\n${sampleSummaries || 'Không phát sinh bài viết mới trong khung giờ này.'}\\n\\nHãy trình bày 4 mục:\\n1. Đánh giá tổng quan tình hình\\n2. Chủ đề & điểm nóng đáng chú ý\\n3. Phân tích sắc thái thông tin\\n4. Kiến nghị công tác nắm tình hình & tham mưu xử lý.`,\n          },\n        ],\n      },\n      json: true,\n    });\n    const generated = aiRes?.choices?.[0]?.message?.content;\n    if (generated) reportContent = generated;\n  } catch {}\n}\n\nlet savedId = null;\ntry {\n  const inserted = await this.helpers.httpRequest({\n    method: 'POST',\n    url: `${PG_API}/api/trend-reports`,\n    headers: { 'Content-Type': 'application/json' },\n    body: {\n      period,\n      period_start: periodStart,\n      period_end: periodEnd,\n      channel: dbChannel,\n      content: reportContent,\n      stats,\n    },\n    json: true,\n  });\n  if (inserted?.data?.id) savedId = inserted.data.id;\n} catch {}\n\nreturn [{\n  json: {\n    ok: true,\n    reportId: savedId,\n    period,\n    channel: dbChannel,\n    period_start: periodStart,\n    period_end: periodEnd,\n    stats,\n    message: `Đã tổng hợp và lưu báo cáo xu hướng (${period}) vào PostgreSQL cho kênh ${dbChannel} (${stats.total} tin bài).`\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-140, 240],
+      "id": "cahy-trend-code-08",
+      "name": "Synthesize & Store Trend Report"
+    },
+    {
+      "parameters": {
+        "respondWith": "firstIncomingItem",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [140, 240],
+      "id": "cahy-trend-respond-09",
+      "name": "Respond Trend Trigger"
+    },
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "screenshot-file",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-420, 480],
+      "id": "cahy-shot-file-webhook-10",
+      "name": "Webhook Screenshot File",
+      "webhookId": "cahy-screenshot-file-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "const fs = require('fs');\nconst path = require('path');\n\nconst query = $input.first().json.query || {};\nconst relPath = String(query.path || query.file || '').replace(/^[/\\\\]+/, '');\nconst baseDir = path.resolve($env.FOXPROFILE_SCREENSHOT_DIR || '/screenshots');\nconst target = path.resolve(baseDir, relPath);\n\nif (!relPath || (!target.startsWith(baseDir + path.sep) && target !== baseDir) || !fs.existsSync(target) || !fs.statSync(target).isFile()) {\n  // Return 1x1 transparent PNG if missing so image tags/pipelines never crash\n  const emptyPng = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', 'base64');\n  return [{\n    json: { found: false, path: relPath },\n    binary: {\n      data: await this.helpers.prepareBinaryData(emptyPng, 'empty.png', 'image/png'),\n    },\n  }];\n}\n\nconst buf = fs.readFileSync(target);\nconst ext = path.extname(target).toLowerCase();\nconst mime = ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' : ext === '.webp' ? 'image/webp' : 'image/png';\nreturn [{\n  json: { found: true, path: relPath },\n  binary: {\n    data: await this.helpers.prepareBinaryData(buf, path.basename(target), mime),\n  },\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-140, 480],
+      "id": "cahy-shot-file-code-11",
+      "name": "Load Screenshot Binary"
+    },
+    {
+      "parameters": {
+        "respondWith": "binary",
+        "responseDataSource": "set",
+        "inputFieldName": "data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [140, 480],
+      "id": "cahy-shot-file-respond-12",
+      "name": "Respond Screenshot Binary"
+    }
+  ],
+  "connections": {
+    "Webhook Auth Login": {
+      "main": [[{ "node": "Verify Credentials & RBAC", "type": "main", "index": 0 }]]
+    },
+    "Verify Credentials & RBAC": {
+      "main": [[{ "node": "Respond Auth Login", "type": "main", "index": 0 }]]
+    },
+    "Webhook Trigger Collection": {
+      "main": [[{ "node": "Prepare Scan Dispatch", "type": "main", "index": 0 }]]
+    },
+    "Prepare Scan Dispatch": {
+      "main": [[{ "node": "Respond Collection Trigger", "type": "main", "index": 0 }]]
+    },
+    "Webhook Run Trend Report": {
+      "main": [[{ "node": "Synthesize & Store Trend Report", "type": "main", "index": 0 }]]
+    },
+    "Synthesize & Store Trend Report": {
+      "main": [[{ "node": "Respond Trend Trigger", "type": "main", "index": 0 }]]
+    },
+    "Webhook Screenshot File": {
+      "main": [[{ "node": "Load Screenshot Binary", "type": "main", "index": 0 }]]
+    },
+    "Load Screenshot Binary": {
+      "main": [[{ "node": "Respond Screenshot Binary", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "id": "cahyAuthCtrl2026",
+  "tags": []
+}

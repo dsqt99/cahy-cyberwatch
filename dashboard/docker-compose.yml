@@ -1,0 +1,20 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VITE_SUPABASE_URL: ${VITE_SUPABASE_URL}
+        VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY}
+        VITE_ADMIN_USERNAME: ${VITE_ADMIN_USERNAME}
+        VITE_ADMIN_PASSWORD: ${VITE_ADMIN_PASSWORD}
+        VITE_GUEST_USERNAME: ${VITE_GUEST_USERNAME}
+        VITE_GUEST_PASSWORD: ${VITE_GUEST_PASSWORD}
+        VITE_OPENAI_API_KEY: ${VITE_OPENAI_API_KEY}
+        VITE_OPENAI_MODEL: ${VITE_OPENAI_MODEL}
+        VITE_OPENAI_BASE_URL: ${VITE_OPENAI_BASE_URL}
+        VITE_SERPER_API_KEY: ${VITE_SERPER_API_KEY}
+    container_name: social-tracking-dashboard
+    restart: unless-stopped
+    ports:
+      - "8888:80"
