@@ -1,0 +1,44 @@
+{
+  "name": "cahy-cyberwatch",
+  "version": "2.0.0",
+  "private": true,
+  "description": "CAHY CyberWatch - Hệ thống Giám sát & Điều hành Không gian mạng All-in-One (Dashboard + n8n Control + FoxProfile Antidetect + Webhook Engine)",
+  "main": "main.js",
+  "scripts": {
+    "start": "node start.js",
+    "restart": "node start.js --restart",
+    "start:raw": "electron .",
+    "smoke": "electron . --smoke-test",
+    "test": "node --test",
+    "dist": "npm run build:dashboard && electron-builder --win portable",
+    "build:dashboard": "npm --prefix ../social-tracking-dashboard run build"
+  },
+  "build": {
+    "appId": "vn.cahy.cyberwatch",
+    "productName": "CAHY CyberWatch",
+    "files": [
+      "main.js",
+      "start.js",
+      "capture.js",
+      "server.js",
+      "preload/**/*",
+      "shell/**/*",
+      "assets/**/*",
+      "package.json"
+    ],
+    "win": {
+      "icon": "assets/icon.ico",
+      "target": "portable"
+    },
+    "extraResources": [
+      {
+        "from": "../social-tracking-dashboard/dist",
+        "to": "dashboard"
+      }
+    ]
+  },
+  "devDependencies": {
+    "electron": "^45.1.0",
+    "electron-builder": "^26.18.0"
+  }
+}

@@ -1,0 +1,6 @@
+﻿node_modules/
+dist/
+# local config holds tokens, API keys and passcode
+config.json
+screenshots/
+*.log

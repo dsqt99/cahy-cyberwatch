@@ -1,0 +1,17 @@
+{
+  "foxprofileDir": "D:\\code\\foxprofile",
+  "foxprofilePort": 8010,
+  "foxprofileToken": "",
+  "headed": true,
+  "webhookHost": "127.0.0.1",
+  "webhookPort": 5680,
+  "screenshotDir": "D:\\code\\dsqt\\conganhungyen\\ai-social-tracking\\cahy-cyberwatch\\screenshots",
+  "defaultProfile": "",
+  "dashboardPort": 5690,
+  "n8nUrl": "http://localhost:5678",
+  "n8nWebhookBase": "http://localhost:5678/webhook/",
+  "n8nApiKey": "",
+  "desktopOperatorPasscode": "",
+  "operatorEmail": "admin@cahy.gov.vn",
+  "minimizeToTray": true
+}

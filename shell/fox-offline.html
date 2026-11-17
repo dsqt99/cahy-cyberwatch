@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <title>FoxProfile Đang Khởi Động - CAHY CyberWatch</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap"
+    rel="stylesheet"
+  />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100dvh; display: flex; align-items: center; justify-content: center;
+      font-family: 'Be Vietnam Pro', system-ui, -apple-system, sans-serif;
+      background: #f6f8fb;
+      color: #0f172a; padding: 24px;
+    }
+    .box {
+      max-width: 500px; width: 100%; background: #ffffff; border-radius: 12px;
+      border: 1px solid #dce3ec; padding: 28px;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+    }
+    .icon-badge {
+      width: 44px; height: 44px; border-radius: 10px;
+      background: #eff6ff; border: 1px solid #bfdbfe; color: #2563eb;
+      display: flex; align-items: center; justify-content: center; margin-bottom: 16px;
+    }
+    .svg-ico {
+      width: 20px; height: 20px; stroke: currentColor; stroke-width: 1.75;
+      stroke-linecap: round; stroke-linejoin: round; fill: none;
+    }
+    h2 { font-size: 18px; font-weight: 700; letter-spacing: -0.015em; margin-bottom: 8px; }
+    p { font-size: 13.5px; color: #5b6b82; line-height: 1.6; margin-bottom: 20px; }
+    code {
+      font-family: 'JetBrains Mono', Consolas, monospace; font-size: 12px;
+      background: #f1f5f9; padding: 2px 6px; border-radius: 4px; color: #1e293b;
+    }
+    .actions { display: flex; gap: 10px; }
+    button {
+      height: 36px; padding: 0 14px; border-radius: 8px; border: 1px solid transparent;
+      font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;
+      transition: background 0.15s ease, transform 0.1s ease;
+    }
+    button:active:not(:disabled) { transform: scale(0.985); }
+    .primary { background: #2563eb; color: #ffffff; }
+    .primary:hover:not(:disabled) { background: #1d4ed8; }
+    .secondary { background: #ffffff; color: #0f172a; border-color: #dce3ec; }
+    .secondary:hover { background: #f1f5f9; }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <div class="icon-badge">
+      <svg class="svg-ico" viewBox="0 0 24 24"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg>
+    </div>
+    <h2>FoxProfile Antidetect hiện chưa trực tuyến</h2>
+    <p id="desc">Tiến trình FoxProfile đang khởi động hoặc cần kiểm tra đường dẫn <code>foxprofileDir</code> trong cấu hình máy trạm.</p>
+    <div class="actions">
+      <button class="primary" id="btn-start">Khởi động lại FoxProfile</button>
+      <button class="secondary" id="btn-cfg">Mở Quản trị Trạm</button>
+    </div>
+  </div>
+  <script>
+    document.getElementById('btn-start').addEventListener('click', async (e) => {
+      e.target.disabled = true;
+      e.target.textContent = 'Đang khởi động...';
+      const r = await window.cyberwatchShell.restartFoxprofile();
+      if (r.ok) {
+        window.cyberwatchShell.switchTab('foxprofile');
+      } else {
+        document.getElementById('desc').textContent = 'Không thể khởi động: ' + (r.error || 'Kiểm tra đường dẫn FoxProfile');
+        e.target.disabled = false;
+        e.target.textContent = 'Thử khởi động lại';
+      }
+    });
+    document.getElementById('btn-cfg').addEventListener('click', () => {
+      window.cyberwatchShell.switchTab('settings');
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,848 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <title>Quản trị Trạm Điều hành - CAHY CyberWatch</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+    rel="stylesheet"
+  />
+  <style>
+    :root {
+      --bg: #f6f8fb;
+      --card: #ffffff;
+      --border: #dce3ec;
+      --border-subtle: #e9eef5;
+      --text: #0f172a;
+      --text-muted: #5b6b82;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --ok-bg: #ecfdf5;
+      --ok-text: #047857;
+      --ok-border: #a7f3d0;
+      --err-bg: #fef2f2;
+      --err-text: #b91c1c;
+      --err-border: #fecaca;
+      --info-bg: #eff6ff;
+      --info-text: #1d4ed8;
+      --info-border: #bfdbfe;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Be Vietnam Pro', system-ui, -apple-system, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 24px 28px 48px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+    .svg-ico {
+      width: 15px;
+      height: 15px;
+      stroke: currentColor;
+      stroke-width: 1.75;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+      flex-shrink: 0;
+    }
+    .container { max-width: 1320px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+    .header {
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 18px 22px; border-radius: 12px;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    }
+    .header-eyebrow {
+      font-family: 'JetBrains Mono', Consolas, monospace;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--primary);
+      margin-bottom: 3px;
+    }
+    .header h1 { font-size: 19px; font-weight: 700; letter-spacing: -0.015em; color: var(--text); }
+    .header p { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+    .header-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    @media (max-width: 980px) { .grid-3, .grid-2 { grid-template-columns: 1fr; } }
+
+    .card {
+      background: var(--card);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      padding: 18px 20px;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    }
+    .card-title {
+      font-size: 14px; font-weight: 700; color: var(--text);
+      margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    }
+    .card-title-left { display: flex; align-items: center; gap: 8px; }
+    .card-title-left .svg-ico { color: var(--primary); }
+
+    .badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-family: 'JetBrains Mono', Consolas, monospace;
+      font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 6px;
+      border: 1px solid transparent;
+    }
+    .badge-ok { background: var(--ok-bg); color: var(--ok-text); border-color: var(--ok-border); }
+    .badge-err { background: var(--err-bg); color: var(--err-text); border-color: var(--err-border); }
+    .badge-info { background: var(--info-bg); color: var(--info-text); border-color: var(--info-border); }
+
+    .stat-row {
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 12.5px; padding: 7px 0; border-bottom: 1px solid var(--border-subtle);
+    }
+    .stat-row:last-child { border-bottom: none; }
+    .stat-label { color: var(--text-muted); }
+    .stat-val {
+      font-weight: 600; color: var(--text);
+      font-family: 'JetBrains Mono', Consolas, monospace;
+      font-variant-numeric: tabular-nums;
+      font-size: 12px;
+    }
+
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .field.full { grid-column: 1 / -1; }
+    label { font-size: 12px; font-weight: 600; color: #334155; }
+    .check-label {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 12.5px; font-weight: 500; color: var(--text);
+      cursor: pointer; padding-top: 4px;
+    }
+    .check-label input[type="checkbox"] {
+      width: 15px; height: 15px; accent-color: var(--primary);
+    }
+    input[type="text"], input[type="number"], input[type="password"], select {
+      height: 36px; padding: 0 11px; border-radius: 8px;
+      border: 1px solid var(--border); font-family: inherit; font-size: 12.5px;
+      background: #ffffff; color: var(--text);
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .mono-input { font-family: 'JetBrains Mono', Consolas, monospace !important; font-size: 12px !important; }
+    input:focus, select:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
+    }
+    .input-group { display: flex; gap: 6px; }
+    .input-group input { flex: 1; }
+
+    .btn {
+      appearance: none; border: 1px solid transparent; border-radius: 8px;
+      height: 36px; padding: 0 14px; font-family: inherit; font-size: 12.5px; font-weight: 600;
+      cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+    }
+    .btn:active:not(:disabled) { transform: scale(0.985); }
+    .btn-primary { background: var(--primary); color: #ffffff; }
+    .btn-primary:hover:not(:disabled) { background: var(--primary-hover); }
+    .btn-secondary { background: #ffffff; color: var(--text); border-color: var(--border); }
+    .btn-secondary:hover:not(:disabled) { background: #f1f5f9; }
+    .btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+    .endpoint-list { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+    .endpoint-item {
+      display: flex; align-items: center; justify-content: space-between;
+      background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 8px; padding: 6px 10px;
+      font-family: 'JetBrains Mono', Consolas, monospace; font-size: 11.5px; color: #1e293b;
+    }
+
+    .log-box {
+      background: #090d16; color: #cbd5e1;
+      font-family: 'JetBrains Mono', Consolas, monospace;
+      font-size: 11.5px; line-height: 1.55; padding: 12px 14px; border-radius: 8px;
+      border: 1px solid #1e293b;
+      height: 240px; overflow-y: auto; white-space: pre-wrap; word-break: break-all;
+    }
+    .preview-box {
+      margin-top: 12px; padding: 12px; border-radius: 8px;
+      background: #f8fafc; border: 1px solid var(--border);
+      font-family: 'JetBrains Mono', Consolas, monospace; font-size: 12px; color: var(--text);
+    }
+    .preview-box img {
+      max-width: 100%; max-height: 260px; border-radius: 8px;
+      border: 1px solid var(--border); margin-top: 10px; display: block;
+    }
+    .toast {
+      position: fixed; bottom: 20px; right: 24px;
+      background: #0f172a; color: #f8fafc; padding: 10px 16px; border-radius: 8px;
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      font-size: 12.5px; font-weight: 600; box-shadow: 0 10px 28px rgba(15, 23, 42, 0.25);
+      display: none; z-index: 100;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th, td {
+      text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border-subtle);
+      font-variant-numeric: tabular-nums;
+    }
+    th {
+      color: var(--text-muted); font-weight: 600; background: #f8fafc;
+      font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em;
+    }
+    td.mono { font-family: 'JetBrains Mono', Consolas, monospace; font-size: 11.5px; }
+
+    .setup-progress { font-family: 'JetBrains Mono', Consolas, monospace; font-size: 12px; color: var(--text-muted); }
+    .setup-list { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+    @media (max-width: 1100px) { .setup-list { grid-template-columns: 1fr; } }
+    .setup-item {
+      display: flex; flex-direction: column; gap: 8px;
+      padding: 12px; border-radius: 10px;
+      border: 1px solid var(--border); background: #f8fafc;
+    }
+    .setup-item.done { background: var(--ok-bg); border-color: var(--ok-border); }
+    .setup-item.todo { background: #fffbeb; border-color: #fde68a; }
+    .setup-head { display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 600; }
+    .setup-num {
+      width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; background: #e2e8f0; color: #334155;
+    }
+    .setup-item.done .setup-num { background: var(--ok-text); color: #ffffff; }
+    .setup-item.todo .setup-num { background: #d97706; color: #ffffff; }
+    .setup-desc { font-size: 11.5px; color: var(--text-muted); flex: 1; }
+    .setup-item .btn { height: 28px; font-size: 11.5px; padding: 0 10px; }
+    .setup-item.done .btn { display: none; }
+
+    details.advanced { grid-column: 1 / -1; border-top: 1px solid var(--border-subtle); padding-top: 12px; }
+    details.advanced summary { cursor: pointer; font-size: 12.5px; font-weight: 600; color: var(--text-muted); }
+    details.advanced[open] summary { margin-bottom: 14px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div>
+        <h1>Quản trị trạm</h1>
+        <p>Thiết lập máy trạm, kiểm thử chụp bằng chứng và xem nhật ký</p>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-secondary" id="btn-refresh">
+          <svg class="svg-ico" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
+          <span>Làm mới</span>
+        </button>
+        <button class="btn btn-secondary" id="btn-restart-fox">
+          <svg class="svg-ico" viewBox="0 0 24 24"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" x2="12" y1="2" y2="12"/></svg>
+          <span>Khởi động lại FoxProfile</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        <span class="card-title-left">
+          <svg class="svg-ico" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          <span>Thiết lập nhanh</span>
+        </span>
+        <span class="setup-progress" id="setup-progress">0/5</span>
+      </div>
+      <div class="setup-list">
+        <div class="setup-item" id="setup-fox">
+          <div class="setup-head"><span class="setup-num">1</span>FoxProfile chạy</div>
+          <div class="setup-desc">Engine trình duyệt antidetect phải trực tuyến.</div>
+          <button class="btn btn-secondary" data-act="restart">Khởi động</button>
+        </div>
+        <div class="setup-item" id="setup-prof">
+          <div class="setup-head"><span class="setup-num">2</span>Có profile</div>
+          <div class="setup-desc">Tạo profile và đăng nhập tài khoản FB/TikTok.</div>
+          <button class="btn btn-secondary" data-act="tab-foxprofile">Mở Tài khoản</button>
+        </div>
+        <div class="setup-item" id="setup-shot">
+          <div class="setup-head"><span class="setup-num">3</span>Thư mục lưu ảnh</div>
+          <div class="setup-desc">Nơi lưu ảnh chụp bằng chứng.</div>
+          <button class="btn btn-secondary" data-act="focus-cfg-screenshotDir">Chọn thư mục</button>
+        </div>
+        <div class="setup-item" id="setup-n8n">
+          <div class="setup-head"><span class="setup-num">4</span>n8n API key</div>
+          <div class="setup-desc">Để bật/tắt và giám sát workflow.</div>
+          <button class="btn btn-secondary" data-act="focus-cfg-n8nApiKey">Nhập key</button>
+        </div>
+        <div class="setup-item" id="setup-pass">
+          <div class="setup-head"><span class="setup-num">5</span>Mã điều hành</div>
+          <div class="setup-desc">Mã mở khóa cục bộ khi không đăng nhập Google.</div>
+          <button class="btn btn-secondary" data-act="focus-cfg-desktopOperatorPasscode">Đặt mã</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-3">
+      <div class="card">
+        <div class="card-title">
+          <span class="card-title-left">
+            <svg class="svg-ico" viewBox="0 0 24 24"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg>
+            <span>FoxProfile Engine</span>
+          </span>
+          <span class="badge badge-info" id="st-fox-badge">Đang kiểm tra</span>
+        </div>
+        <div class="stat-row"><span class="stat-label">Địa chỉ API</span><span class="stat-val" id="st-fox-url">-</span></div>
+        <div class="stat-row"><span class="stat-label">Tổng số Profile</span><span class="stat-val" id="st-fox-total">0</span></div>
+        <div class="stat-row"><span class="stat-label">Đang mở trình duyệt</span><span class="stat-val" id="st-fox-running">0</span></div>
+        <div class="stat-row"><span class="stat-label">Chế độ hiển thị</span><span class="stat-val" id="st-fox-mode">-</span></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          <span class="card-title-left">
+            <svg class="svg-ico" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+            <span>Webhook Bằng chứng Cục bộ</span>
+          </span>
+          <span class="badge badge-ok" id="st-hook-badge">Trực tuyến</span>
+        </div>
+        <div class="stat-row"><span class="stat-label">Cổng lắng nghe</span><span class="stat-val" id="st-hook-port">127.0.0.1:5680</span></div>
+        <div class="stat-row"><span class="stat-label">Đang xử lý / Hoàn tất</span><span class="stat-val" id="st-hook-counts">0 / 0</span></div>
+        <div class="stat-row"><span class="stat-label">Lỗi chụp / Xuất Cookie</span><span class="stat-val" id="st-hook-extra">0 / 0</span></div>
+        <div style="margin-top:12px;">
+          <button class="btn btn-secondary" id="btn-open-shots" style="width:100%;">
+            <svg class="svg-ico" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+            <span>Mở thư mục lưu ảnh bằng chứng</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          <span class="card-title-left">
+            <svg class="svg-ico" viewBox="0 0 24 24"><rect width="6" height="6" x="3" y="3" rx="1"/><rect width="6" height="6" x="15" y="15" rx="1"/><path d="M9 6h4a2 2 0 0 1 2 2v7"/></svg>
+            <span>Kết nối n8n & Dashboard</span>
+          </span>
+          <span class="badge badge-info" id="st-n8n-badge">Đã cấu hình</span>
+        </div>
+        <div class="stat-row"><span class="stat-label">Dashboard Origin</span><span class="stat-val" id="st-dash-url">http://localhost:5690</span></div>
+        <div class="stat-row"><span class="stat-label">n8n Server</span><span class="stat-val" id="st-n8n-url">-</span></div>
+        <div class="stat-row"><span class="stat-label">n8n Public API Key</span><span class="stat-val" id="st-n8n-key">-</span></div>
+        <div class="stat-row"><span class="stat-label">Profile mặc định</span><span class="stat-val" id="st-def-prof">Tự động</span></div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">
+          <span class="card-title-left">
+            <svg class="svg-ico" viewBox="0 0 24 24"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/><circle cx="8" cy="6" r="2"/><circle cx="16" cy="12" r="2"/><circle cx="10" cy="18" r="2"/></svg>
+            <span>Cấu hình</span>
+          </span>
+          <button class="btn btn-primary" id="btn-save-cfg" style="height:32px; font-size:12px;">
+            <svg class="svg-ico" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            <span>Lưu cấu hình</span>
+          </button>
+        </div>
+        <div class="form-grid">
+          <div class="field full">
+            <label for="cfg-foxprofileDir">Thư mục FoxProfile (chứa .venv)</label>
+            <div class="input-group">
+              <input type="text" class="mono-input" id="cfg-foxprofileDir" placeholder="D:\code\foxprofile" />
+              <button class="btn btn-secondary" id="pick-fox">Chọn...</button>
+            </div>
+          </div>
+          <div class="field full">
+            <label for="cfg-screenshotDir">Thư mục lưu ảnh bằng chứng</label>
+            <div class="input-group">
+              <input type="text" class="mono-input" id="cfg-screenshotDir" placeholder="D:\code\...\screenshots" />
+              <button class="btn btn-secondary" id="pick-shot">Chọn...</button>
+            </div>
+          </div>
+          <div class="field full">
+            <label for="cfg-n8nUrl">Địa chỉ n8n</label>
+            <input type="text" class="mono-input" id="cfg-n8nUrl" placeholder="http://localhost:5678" />
+          </div>
+          <div class="field full">
+            <label for="cfg-n8nApiKey">n8n API key (n8n Settings &gt; n8n API)</label>
+            <input type="password" class="mono-input" id="cfg-n8nApiKey" placeholder="Dán API key" />
+          </div>
+          <div class="field">
+            <label for="cfg-desktopOperatorPasscode">Mã điều hành trạm</label>
+            <input type="password" class="mono-input" id="cfg-desktopOperatorPasscode" placeholder="Mã mở khóa cục bộ" />
+          </div>
+          <div class="field">
+            <label for="cfg-operatorEmail">Email người vận hành</label>
+            <input type="text" class="mono-input" id="cfg-operatorEmail" placeholder="admin@cahy.gov.vn" />
+          </div>
+
+          <details class="advanced" id="cfg-advanced">
+            <summary>Nâng cao (cổng, profile mặc định, hiển thị)</summary>
+            <div class="form-grid">
+              <div class="field">
+                <label for="cfg-foxprofilePort">Cổng FoxProfile</label>
+                <input type="number" class="mono-input" id="cfg-foxprofilePort" />
+              </div>
+              <div class="field">
+                <label for="cfg-defaultProfile">Profile mặc định (trống = tự động)</label>
+                <input type="text" class="mono-input" id="cfg-defaultProfile" placeholder="test-news / test-fb" />
+              </div>
+              <div class="field">
+                <label for="cfg-webhookPort">Cổng webhook cục bộ</label>
+                <input type="number" class="mono-input" id="cfg-webhookPort" />
+              </div>
+              <div class="field">
+                <label for="cfg-dashboardPort">Cổng dashboard cục bộ</label>
+                <input type="number" class="mono-input" id="cfg-dashboardPort" />
+              </div>
+              <div class="field">
+                <label class="check-label"><input type="checkbox" id="cfg-headed" /> Hiện cửa sổ trình duyệt khi chụp</label>
+              </div>
+              <div class="field">
+                <label class="check-label"><input type="checkbox" id="cfg-minimizeToTray" /> Thu xuống khay hệ thống khi đóng</label>
+              </div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          <span class="card-title-left">
+            <svg class="svg-ico" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            <span>Kiểm thử Chụp Bằng chứng & Xuất Cookie FB</span>
+          </span>
+        </div>
+        <div class="form-grid">
+          <div class="field">
+            <label for="test-type">Loại tác vụ</label>
+            <select id="test-type">
+              <option value="news">Chụp Báo điện tử (screenshot_news)</option>
+              <option value="fb">Chụp Facebook ANTT (screenshot_fb)</option>
+              <option value="fbpđ">Chụp Facebook Phản động (screenshot_fbpđ)</option>
+              <option value="tiktok">Chụp TikTok (screenshot_tiktok)</option>
+              <option value="cookie">Xuất Cookie Facebook (export_fb_cookie)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="test-profile">Chọn Profile FoxProfile</label>
+            <select id="test-profile">
+              <option value="">Tự động chọn Profile phù hợp</option>
+            </select>
+          </div>
+          <div class="field full" id="test-url-wrap">
+            <label for="test-url">Đường dẫn URL cần chụp bằng chứng</label>
+            <input type="text" class="mono-input" id="test-url" value="https://example.com" placeholder="https://..." />
+          </div>
+          <div class="field full">
+            <button class="btn btn-primary" id="btn-run-test">Thực thi kiểm thử ngay</button>
+          </div>
+        </div>
+
+        <div class="preview-box" id="test-result" style="display:none;"></div>
+
+        <div style="margin-top:16px;">
+          <label>Danh sách Webhook cục bộ phục vụ n8n</label>
+          <div class="endpoint-list" id="endpoint-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        <span class="card-title-left">
+          <svg class="svg-ico" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+          <span>Tài khoản Facebook cho n8n</span>
+        </span>
+        <span class="badge badge-info" id="fb-badge">Chưa làm mới</span>
+      </div>
+      <div class="grid-2">
+        <div class="form-grid">
+          <div class="field">
+            <label for="fb-profile">Profile FoxProfile giữ phiên Facebook</label>
+            <select id="fb-profile"><option value="">Chưa chọn</option></select>
+          </div>
+          <div class="field">
+            <label for="fb-minutes">Tự làm mới cookie mỗi (phút, 0 = tắt)</label>
+            <input type="number" min="0" step="30" class="mono-input" id="fb-minutes" value="360" />
+          </div>
+          <div class="field full" style="flex-direction:row; flex-wrap:wrap; gap:8px;">
+            <button class="btn btn-primary" id="btn-fb-open">Mở profile để đăng nhập</button>
+            <button class="btn btn-secondary" id="btn-fb-finish">Đã đăng nhập xong, lưu phiên</button>
+            <button class="btn btn-secondary" id="btn-fb-refresh">Làm mới ngay</button>
+            <button class="btn btn-secondary" id="btn-fb-save">Lưu thiết lập</button>
+          </div>
+          <div class="field full" style="font-size:12px; color:var(--text-muted);">
+            Đăng nhập thủ công trong cửa sổ FoxProfile. Ứng dụng không lưu mật khẩu, chỉ lấy cookie phiên ghi vào credential n8n.
+          </div>
+        </div>
+        <div>
+          <div class="stat-row"><span class="stat-label">Profile</span><span class="stat-val" id="fb-st-profile">-</span></div>
+          <div class="stat-row"><span class="stat-label">c_user</span><span class="stat-val" id="fb-st-cuser">-</span></div>
+          <div class="stat-row"><span class="stat-label">Làm mới lần cuối</span><span class="stat-val" id="fb-st-at">-</span></div>
+          <div class="stat-row"><span class="stat-label">User-Agent phiên</span><span class="stat-val" id="fb-st-ua">-</span></div>
+          <div class="stat-row"><span class="stat-label">Lỗi gần nhất</span><span class="stat-val" id="fb-st-err" style="white-space:normal; text-align:right;">-</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">
+          <span class="card-title-left">
+            <svg class="svg-ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <span>Lịch sử Hàng đợi Chụp & Cookie gần đây</span>
+          </span>
+        </div>
+        <div style="max-height:240px; overflow-y:auto; border:1px solid var(--border-subtle); border-radius:8px;">
+          <table>
+            <thead>
+              <tr><th>Thời gian</th><th>Tác vụ</th><th>Profile</th><th>Trạng thái</th><th>Thời lượng</th></tr>
+            </thead>
+            <tbody id="jobs-tbody">
+              <tr><td colspan="5" style="color:var(--text-muted); text-align:center; padding:18px;">Chưa có tác vụ nào</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          <span class="card-title-left">
+            <svg class="svg-ico" viewBox="0 0 24 24"><polyline points="4 17 10 11 4 5"/><line x1="12" x2="20" y1="19" y2="19"/></svg>
+            <span>Nhật ký Tiến trình (app.log)</span>
+          </span>
+          <button class="btn btn-secondary" id="btn-open-log" style="height:28px; font-size:11.5px; padding:0 10px;">Mở tệp log</button>
+        </div>
+        <div class="log-box" id="log-box">Đang tải nhật ký...</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    let webhookBase = 'http://127.0.0.1:5680';
+    let currentLogPath = '';
+    let currentShotDir = '';
+
+    function showToast(msg) {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.style.display = 'block';
+      clearTimeout(showToast._t);
+      showToast._t = setTimeout(() => { el.style.display = 'none'; }, 3200);
+    }
+
+    async function loadConfigForm() {
+      const cfg = await window.cyberwatchShell.getConfig();
+      webhookBase = `http://127.0.0.1:${cfg.webhookPort || 5680}`;
+      currentShotDir = cfg.screenshotDir || '';
+      document.getElementById('cfg-foxprofileDir').value = cfg.foxprofileDir || '';
+      document.getElementById('cfg-screenshotDir').value = cfg.screenshotDir || '';
+      document.getElementById('cfg-foxprofilePort').value = cfg.foxprofilePort || 8010;
+      document.getElementById('cfg-defaultProfile').value = cfg.defaultProfile || '';
+      document.getElementById('cfg-webhookPort').value = cfg.webhookPort || 5680;
+      document.getElementById('cfg-dashboardPort').value = cfg.dashboardPort || 5690;
+      document.getElementById('cfg-n8nUrl').value = cfg.n8nUrl || '';
+      document.getElementById('cfg-n8nApiKey').value = cfg.n8nApiKey || '';
+      document.getElementById('cfg-desktopOperatorPasscode').value = cfg.desktopOperatorPasscode || '';
+      document.getElementById('cfg-operatorEmail').value = cfg.operatorEmail || '';
+      document.getElementById('cfg-headed').checked = Boolean(cfg.headed);
+      document.getElementById('cfg-minimizeToTray').checked = cfg.minimizeToTray !== false;
+
+      const eps = [
+        `${webhookBase}/webhook/screenshot_fb`,
+        `${webhookBase}/webhook/screenshot_fbpđ`,
+        `${webhookBase}/webhook/screenshot_news`,
+        `${webhookBase}/webhook/screenshot_tiktok`,
+        `${webhookBase}/webhook/export_fb_cookie`,
+      ];
+      const epList = document.getElementById('endpoint-list');
+      epList.innerHTML = '';
+      eps.forEach((ep) => {
+        const row = document.createElement('div');
+        row.className = 'endpoint-item';
+        const span = document.createElement('span');
+        span.textContent = ep;
+        const btn = document.createElement('button');
+        btn.className = 'btn btn-secondary';
+        btn.style.height = '24px';
+        btn.style.padding = '0 8px';
+        btn.style.fontSize = '11px';
+        btn.textContent = 'Sao chép';
+        btn.onclick = () => { navigator.clipboard.writeText(ep); showToast('Đã sao chép: ' + ep); };
+        row.appendChild(span);
+        row.appendChild(btn);
+        epList.appendChild(row);
+      });
+    }
+
+    async function refreshTelemetry() {
+      try {
+        const [stRes, logRes] = await Promise.all([
+          fetch(`${webhookBase}/api/desktop/status`),
+          fetch(`${webhookBase}/api/desktop/logs?limit=120`),
+        ]);
+        const st = await stRes.json();
+        const lg = await logRes.json();
+
+        const fox = st.services.foxprofile;
+        const foxBadge = document.getElementById('st-fox-badge');
+        foxBadge.className = fox.online ? 'badge badge-ok' : 'badge badge-err';
+        foxBadge.textContent = fox.online ? 'Trực tuyến' : 'Ngoại tuyến';
+        document.getElementById('st-fox-url').textContent = fox.url;
+        document.getElementById('st-fox-total').textContent = String(fox.profilesCount);
+        document.getElementById('st-fox-running').textContent = String(fox.runningCount);
+        document.getElementById('st-fox-mode').textContent = fox.headed ? 'Headed (Hiện cửa sổ)' : 'Headless (Ẩn)';
+
+        const cs = st.captureStats;
+        document.getElementById('st-hook-port').textContent = `${st.services.webhook.host}:${st.services.webhook.port}`;
+        document.getElementById('st-hook-counts').textContent = `${cs.activeJobs} đang chạy / ${cs.totalSuccess} hoàn tất`;
+        document.getElementById('st-hook-extra').textContent = `${cs.totalFailed} lỗi / ${cs.totalCookieExports} lần cookie`;
+
+        document.getElementById('st-dash-url').textContent = st.services.dashboard.url;
+        document.getElementById('st-n8n-url').textContent = st.services.n8n.url;
+        document.getElementById('st-n8n-key').textContent = st.services.n8n.hasApiKey ? 'Đã cấu hình' : 'Chưa nhập';
+        const n8nBadge = document.getElementById('st-n8n-badge');
+        n8nBadge.className = st.services.n8n.hasApiKey ? 'badge badge-ok' : 'badge badge-err';
+        n8nBadge.textContent = st.services.n8n.hasApiKey ? 'Đã cấu hình' : 'Thiếu API key';
+        document.getElementById('st-def-prof').textContent = st.configSummary.defaultProfile || 'Tự động';
+
+        const steps = {
+          'setup-fox': fox.online,
+          'setup-prof': fox.profilesCount > 0,
+          'setup-shot': Boolean(st.configSummary.screenshotDir),
+          'setup-n8n': st.services.n8n.hasApiKey,
+          'setup-pass': st.configSummary.hasOperatorPasscode,
+        };
+        Object.entries(steps).forEach(([id, ok]) => {
+          document.getElementById(id).className = 'setup-item ' + (ok ? 'done' : 'todo');
+        });
+        const doneCount = Object.values(steps).filter(Boolean).length;
+        document.getElementById('setup-progress').textContent = `${doneCount}/5 xong`;
+
+        const profSelect = document.getElementById('test-profile');
+        const currentVal = profSelect.value;
+        profSelect.innerHTML = '<option value="">Tự động chọn Profile phù hợp</option>';
+        (st.profiles || []).forEach((p) => {
+          const opt = document.createElement('option');
+          opt.value = p.name;
+          opt.textContent = `${p.name} (${p.engine || 'camoufox'})`;
+          profSelect.appendChild(opt);
+        });
+        profSelect.value = currentVal;
+
+        const fbSelect = document.getElementById('fb-profile');
+        const fbVal = fbSelect.value;
+        fbSelect.innerHTML = '<option value="">Chưa chọn</option>';
+        (st.profiles || []).forEach((p) => fbSelect.add(new Option(p.name, p.name)));
+        fbSelect.value = fbVal;
+        refreshFbStatus();
+
+        const tbody = document.getElementById('jobs-tbody');
+        const jobs = cs.recentJobs || [];
+        if (jobs.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" style="color:var(--text-muted); text-align:center; padding:18px;">Chưa có tác vụ nào trong phiên này</td></tr>';
+        } else {
+          tbody.innerHTML = '';
+          jobs.forEach((j) => {
+            const tr = document.createElement('tr');
+            const time = new Date(j.startedAt).toLocaleTimeString('vi-VN');
+            const badgeCls = j.status === 'success' ? 'badge-ok' : j.status === 'error' ? 'badge-err' : 'badge-info';
+            tr.innerHTML = `<td class="mono">${time}</td><td><b>${j.type}</b></td><td class="mono">${j.profile_id}</td><td><span class="badge ${badgeCls}">${j.status}</span></td><td class="mono">${j.durationMs}ms</td>`;
+            tbody.appendChild(tr);
+          });
+        }
+
+        currentLogPath = lg.logPath || '';
+        const logBox = document.getElementById('log-box');
+        logBox.textContent = (lg.lines && lg.lines.length) ? lg.lines.join('\n') : 'Nhật ký trống.';
+        logBox.scrollTop = logBox.scrollHeight;
+      } catch (e) {
+        document.getElementById('log-box').textContent = 'Không thể kết nối Webhook Engine: ' + e.message;
+      }
+    }
+
+    let fbFormLoaded = false;
+    async function refreshFbStatus() {
+      try {
+        const s = await (await fetch(`${webhookBase}/api/desktop/fb-session/status`)).json();
+        if (!fbFormLoaded) {
+          fbFormLoaded = true;
+          document.getElementById('fb-profile').value = s.profile_id || '';
+          document.getElementById('fb-minutes').value = s.refresh_minutes;
+        }
+        const last = s.last;
+        const badge = document.getElementById('fb-badge');
+        badge.className = !last ? 'badge badge-info' : last.ok ? 'badge badge-ok' : 'badge badge-err';
+        badge.textContent = !last ? 'Chưa làm mới' : last.ok ? 'Phiên hợp lệ' : 'Lỗi phiên';
+        document.getElementById('fb-st-profile').textContent = s.profile_id || 'Chưa chọn';
+        document.getElementById('fb-st-cuser').textContent = last?.c_user || '-';
+        document.getElementById('fb-st-at').textContent = last ? `${new Date(last.at).toLocaleString('vi-VN')}${last.auto ? ' (tự động)' : ''}` : '-';
+        document.getElementById('fb-st-ua').textContent = s.user_agent_saved ? 'Lấy từ profile' : 'Mặc định';
+        document.getElementById('fb-st-err').textContent = last && !last.ok ? last.error : '-';
+      } catch { /* engine offline: telemetry already shows it */ }
+    }
+
+    // Save only the FB keys; pass n8nWebhookBase through so shell:save-config does not reset it.
+    async function saveFbConfig(extra = {}) {
+      const cfg = await window.cyberwatchShell.getConfig();
+      await window.cyberwatchShell.saveConfig({
+        n8nWebhookBase: cfg.n8nWebhookBase,
+        fbCookieProfile: document.getElementById('fb-profile').value,
+        fbCookieRefreshMinutes: Math.max(0, Number(document.getElementById('fb-minutes').value) || 0),
+        ...extra,
+      });
+    }
+
+    async function fbAction(btnId, busyText, fn) {
+      const btn = document.getElementById(btnId);
+      const label = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = busyText;
+      try { await fn(); } catch (e) { showToast('Lỗi: ' + e.message); } finally {
+        btn.disabled = false;
+        btn.textContent = label;
+        refreshFbStatus();
+      }
+    }
+
+    const fbPost = async (path) => {
+      const r = await fetch(`${webhookBase}${path}`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ profile_id: document.getElementById('fb-profile').value }),
+      });
+      return r.json();
+    };
+
+    document.getElementById('btn-fb-save').addEventListener('click', () => fbAction('btn-fb-save', 'Đang lưu...', async () => {
+      await saveFbConfig();
+      showToast('Đã lưu thiết lập Facebook');
+    }));
+    document.getElementById('btn-fb-open').addEventListener('click', () => fbAction('btn-fb-open', 'Đang mở trình duyệt...', async () => {
+      if (!document.getElementById('fb-profile').value) throw new Error('Chọn profile trước');
+      await saveFbConfig();
+      const d = await fbPost('/api/desktop/fb-login/open');
+      if (!d.ok) throw new Error(d.error);
+      showToast('Đã mở facebook.com. Đăng nhập xong thì bấm "Đã đăng nhập xong, lưu phiên".');
+    }));
+    document.getElementById('btn-fb-finish').addEventListener('click', () => fbAction('btn-fb-finish', 'Đang lưu phiên...', async () => {
+      const d = await fbPost('/api/desktop/fb-login/finish');
+      if (d.user_agent) await saveFbConfig({ fbSessionUserAgent: d.user_agent });
+      if (!d.ok) throw new Error(d.error);
+      showToast(`Đã lưu phiên c_user=${d.c_user} vào credential n8n`);
+    }));
+    document.getElementById('btn-fb-refresh').addEventListener('click', () => fbAction('btn-fb-refresh', 'Đang làm mới...', async () => {
+      const d = await fbPost('/api/desktop/fb-cookie-refresh');
+      if (!d.ok) throw new Error(d.error);
+      showToast(`Đã làm mới c_user=${d.c_user}`);
+    }));
+
+    document.getElementById('test-type').addEventListener('change', (e) => {
+      document.getElementById('test-url-wrap').style.display = e.target.value === 'cookie' ? 'none' : 'flex';
+    });
+
+    document.getElementById('btn-run-test').addEventListener('click', async () => {
+      const btn = document.getElementById('btn-run-test');
+      const resBox = document.getElementById('test-result');
+      const type = document.getElementById('test-type').value;
+      const profile_id = document.getElementById('test-profile').value;
+      const url = document.getElementById('test-url').value.trim();
+
+      btn.disabled = true;
+      btn.textContent = 'Đang thực thi trên FoxProfile...';
+      resBox.style.display = 'block';
+      resBox.textContent = 'Đang khởi chạy trình duyệt & xử lý yêu cầu...';
+
+      try {
+        if (type === 'cookie') {
+          const r = await fetch(`${webhookBase}/webhook/export_fb_cookie`, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ profile_id }),
+          });
+          const data = await r.json();
+          resBox.textContent = data.ok
+            ? `[OK] Xuất Cookie thành công | Profile: ${data.profile_id} | c_user: ${data.c_user} | Tổng cookie FB: ${data.total_cookies}`
+            : `[CẢNH BÁO] Chưa lấy được cookie đăng nhập FB (${data.profile_id || 'N/A'}): ${data.error}`;
+        } else {
+          const r = await fetch(`${webhookBase}/webhook/screenshot_${encodeURIComponent(type)}?include_preview=1`, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ url, profile_id, source: 'desktop-test' }),
+          });
+          const data = await r.json();
+          if (!r.ok) throw new Error(data.error || `HTTP ${r.status}`);
+          const saved = data[0]?.outputFilePath?.[0];
+          const preview = data[0]?.previewUrl;
+          resBox.innerHTML = '';
+          const p = document.createElement('div');
+          p.textContent = `[OK] Đã lưu bằng chứng: ${saved}`;
+          resBox.appendChild(p);
+          if (preview) {
+            const img = document.createElement('img');
+            img.src = `${preview}?t=${Date.now()}`;
+            img.alt = 'Ảnh chụp bằng chứng số';
+            resBox.appendChild(img);
+          }
+        }
+      } catch (e) {
+        resBox.textContent = '[LỖI] Kiểm thử thất bại: ' + e.message;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Thực thi kiểm thử ngay';
+        refreshTelemetry();
+      }
+    });
+
+    document.getElementById('btn-save-cfg').addEventListener('click', async () => {
+      const payload = {
+        foxprofileDir: document.getElementById('cfg-foxprofileDir').value.trim(),
+        screenshotDir: document.getElementById('cfg-screenshotDir').value.trim(),
+        foxprofilePort: Number(document.getElementById('cfg-foxprofilePort').value) || 8010,
+        defaultProfile: document.getElementById('cfg-defaultProfile').value.trim(),
+        webhookPort: Number(document.getElementById('cfg-webhookPort').value) || 5680,
+        dashboardPort: Number(document.getElementById('cfg-dashboardPort').value) || 5690,
+        n8nUrl: document.getElementById('cfg-n8nUrl').value.trim(),
+        n8nApiKey: document.getElementById('cfg-n8nApiKey').value.trim(),
+        desktopOperatorPasscode: document.getElementById('cfg-desktopOperatorPasscode').value.trim(),
+        operatorEmail: document.getElementById('cfg-operatorEmail').value.trim(),
+        headed: document.getElementById('cfg-headed').checked,
+        minimizeToTray: document.getElementById('cfg-minimizeToTray').checked,
+      };
+      await window.cyberwatchShell.saveConfig(payload);
+      currentShotDir = payload.screenshotDir;
+      showToast('Đã lưu cấu hình config.json');
+      refreshTelemetry();
+    });
+
+    document.getElementById('pick-fox').addEventListener('click', async () => {
+      const dir = await window.cyberwatchShell.pickDirectory(document.getElementById('cfg-foxprofileDir').value);
+      if (dir) document.getElementById('cfg-foxprofileDir').value = dir;
+    });
+    document.getElementById('pick-shot').addEventListener('click', async () => {
+      const dir = await window.cyberwatchShell.pickDirectory(document.getElementById('cfg-screenshotDir').value);
+      if (dir) document.getElementById('cfg-screenshotDir').value = dir;
+    });
+    document.getElementById('btn-open-shots').addEventListener('click', () => {
+      if (currentShotDir) window.cyberwatchShell.openPath(currentShotDir);
+    });
+    document.getElementById('btn-open-log').addEventListener('click', () => {
+      if (currentLogPath) window.cyberwatchShell.openPath(currentLogPath);
+    });
+    document.querySelectorAll('.setup-item .btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const act = btn.dataset.act;
+        if (act === 'restart') return document.getElementById('btn-restart-fox').click();
+        if (act === 'tab-foxprofile') return window.cyberwatchShell.switchTab('foxprofile');
+        const input = document.getElementById(act.replace('focus-', ''));
+        input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        input.focus();
+      });
+    });
+    document.getElementById('btn-refresh').addEventListener('click', refreshTelemetry);
+    document.getElementById('btn-restart-fox').addEventListener('click', async () => {
+      showToast('Đang khởi động lại tiến trình FoxProfile...');
+      const res = await window.cyberwatchShell.restartFoxprofile();
+      showToast(res.ok ? 'FoxProfile đã sẵn sàng' : (res.error || 'Không thể khởi động FoxProfile'));
+      refreshTelemetry();
+    });
+
+    loadConfigForm().then(refreshTelemetry);
+    setInterval(refreshTelemetry, 5000);
+  </script>
+</body>
+</html>

@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <title>CAHY CyberWatch Shell</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap"
+    rel="stylesheet"
+  />
+  <style>
+    /* Tokens mirror the dashboard L-frame (--chrome / --background / --border in globals.css) */
+    :root {
+      --bar-h: 46px;
+      --chrome: hsl(214 22% 92.5%);
+      --canvas: hsl(210 25% 97.5%);
+      --hover: hsl(214 22% 88%);
+      --border: hsl(214 24% 86%);
+      --text: #0f172a;
+      --muted: #64748b;
+      --accent: #2563eb;
+      --accent-soft: rgba(37, 99, 235, 0.1);
+      --ok: #10b981;
+      --warn: #f59e0b;
+      --err: #ef4444;
+      --menu-bg: #ffffff;
+      --shadow: 0 12px 28px -8px rgba(15, 23, 42, 0.18), 0 0 0 1px rgba(15, 23, 42, 0.06);
+    }
+    :root[data-theme="dark"] {
+      --chrome: hsl(224 45% 5%);
+      --canvas: hsl(222 42% 8.5%);
+      --hover: hsl(220 30% 12%);
+      --border: hsl(218 25% 17.5%);
+      --text: #e2e8f0;
+      --muted: #8391a7;
+      --accent: #60a5fa;
+      --accent-soft: rgba(96, 165, 250, 0.14);
+      --menu-bg: hsl(222 40% 9%);
+      --shadow: 0 16px 36px -8px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.07);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      background: transparent;
+      font-family: 'Be Vietnam Pro', system-ui, sans-serif;
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+    }
+    button { font-family: inherit; appearance: none; border: none; background: none; color: inherit; cursor: pointer; }
+    button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+    .svg-ico {
+      width: 15px; height: 15px; flex-shrink: 0;
+      stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; fill: none;
+    }
+
+    /* ---------- Bar ---------- */
+    .bar {
+      position: relative;
+      z-index: 2;
+      height: var(--bar-h);
+      background: var(--chrome);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0 10px 0 19px;
+    }
+
+    /* Brand zone = dashboard sidebar width (240px) so logo sits on the nav icon column and tabs on the content title line */
+    .brand { display: flex; align-items: center; gap: 9px; width: 221px; flex-shrink: 0; cursor: default; }
+    .brand-logo { width: 22px; height: 22px; object-fit: contain; }
+    .brand-title { font-size: 13px; font-weight: 700; letter-spacing: -0.01em; white-space: nowrap; }
+    .brand-tag {
+      font-size: 10.5px; font-weight: 600;
+      color: var(--muted); padding: 1px 5px; border: 1px solid var(--border); border-radius: 4px;
+    }
+
+
+    /* Workspace tabs: segmented track, active tab lifts to the canvas colour */
+    .tabs {
+      display: flex; align-items: center; gap: 2px; margin-left: 26px; padding: 3px;
+      background: var(--hover); border-radius: 9px;
+    }
+    .tab-btn {
+      height: 28px; padding: 0 12px; border-radius: 6px;
+      display: inline-flex; align-items: center; gap: 7px;
+      font-size: 12.5px; font-weight: 500; color: var(--muted); white-space: nowrap;
+      transition: background-color .2s cubic-bezier(0.32, 0.72, 0, 1), color .2s cubic-bezier(0.32, 0.72, 0, 1), box-shadow .2s cubic-bezier(0.32, 0.72, 0, 1);
+    }
+    .tab-btn:hover:not(.locked):not(.active) { color: var(--text); }
+    .tab-btn.active {
+      background: var(--canvas); color: var(--text);
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.1);
+    }
+    .tab-btn.active .svg-ico { color: var(--accent); }
+    .tab-btn.locked { opacity: 0.5; cursor: not-allowed; }
+    @media (prefers-reduced-motion: reduce) { .tab-btn { transition: none; } }
+
+    .spacer { flex: 1; min-width: 8px; }
+
+    .user-btn {
+      height: 32px; padding: 0 8px 0 3px; border-radius: 999px;
+      display: flex; align-items: center; gap: 7px;
+      font-size: 12px; font-weight: 500;
+      transition: background .15s;
+    }
+    .user-btn:hover, .user-btn[aria-expanded="true"] { background: var(--hover); }
+    .avatar-sm {
+      width: 26px; height: 26px; border-radius: 50%;
+      background: var(--accent); color: #fff; font-size: 11px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center; text-transform: uppercase; flex-shrink: 0;
+    }
+    :root[data-theme="dark"] .avatar-sm { background: #2563eb; }
+    .user-btn.locked .avatar-sm { background: var(--border); color: var(--muted); }
+    .user-name { max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .chev { width: 12px; height: 12px; color: var(--muted); transition: transform .15s; }
+    .user-btn[aria-expanded="true"] .chev { transform: rotate(180deg); }
+
+    /* ---------- Account menu ---------- */
+    .scrim { position: fixed; inset: var(--bar-h) 0 0 0; z-index: 1; display: none; }
+    .menu {
+      position: fixed; top: calc(var(--bar-h) - 2px); right: 10px; z-index: 3;
+      width: 272px; padding: 6px;
+      background: var(--menu-bg); border-radius: 10px; box-shadow: var(--shadow);
+      display: none;
+    }
+    body.menu-open .menu, body.menu-open .scrim { display: block; }
+
+    .menu-profile { display: flex; align-items: center; gap: 10px; padding: 8px 8px 10px; }
+    .avatar-lg {
+      width: 34px; height: 34px; border-radius: 50%; background: #2563eb; color: #fff;
+      font-size: 14px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .menu-profile-text { min-width: 0; flex: 1; }
+    .menu-name { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .menu-email { font-size: 11.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .role-badge {
+      font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 600; text-transform: uppercase;
+      padding: 2px 6px; border-radius: 4px; background: var(--accent-soft); color: var(--accent);
+    }
+    .menu-sep { height: 1px; margin: 4px 2px; background: var(--border); }
+    .menu-item {
+      width: 100%; height: 32px; padding: 0 8px; border-radius: 6px;
+      display: flex; align-items: center; gap: 10px;
+      font-size: 12.5px; font-weight: 500; text-align: left;
+    }
+    .menu-item:hover:not(:disabled) { background: var(--hover); }
+    .menu-item:disabled { opacity: 0.45; cursor: not-allowed; }
+    .menu-item .svg-ico { color: var(--muted); }
+    .menu-kbd { margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted); }
+    .menu-item.danger, .menu-item.danger .svg-ico { color: var(--err); }
+
+    .theme-row { height: 36px; padding: 0 4px 0 8px; display: flex; align-items: center; gap: 10px; font-size: 12.5px; font-weight: 500; }
+    .theme-row > .svg-ico { color: var(--muted); }
+    .theme-seg { margin-left: auto; display: flex; gap: 2px; padding: 2px; background: var(--chrome); border-radius: 6px; }
+    .theme-seg button {
+      height: 24px; padding: 0 8px; border-radius: 4px;
+      display: flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 500; color: var(--muted);
+    }
+    .theme-seg button .svg-ico { width: 13px; height: 13px; }
+    .theme-seg button[aria-pressed="true"] { background: var(--menu-bg); color: var(--text); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+    .menu-note { padding: 6px 8px 4px; font-size: 11px; line-height: 1.45; color: var(--muted); }
+
+    @media (max-width: 1100px) { .brand-tag { display: none; } }
+    /* Dashboard hides its sidebar below lg (1024px): drop the fixed brand zone too */
+    @media (max-width: 1023px) { .brand { width: auto; } .tabs { margin-left: 8px; } }
+    @media (max-width: 960px) { .user-name { max-width: 90px; } }
+  </style>
+</head>
+<body>
+  <header class="bar">
+    <div class="brand" title="CAHY CyberWatch - Công an tỉnh Hưng Yên">
+      <img class="brand-logo" src="../assets/icon.png" alt="Emblem CAHY" />
+      <span class="brand-title">CyberWatch</span>
+      <span class="brand-tag">CAHY</span>
+    </div>
+
+
+    <nav class="tabs" id="tabs" aria-label="Không gian làm việc">
+      <button class="tab-btn active" data-tab="dashboard" title="Giám sát & phân tích">
+        <span class="tab-icon" data-icon="dashboard"></span>
+        <span>Giám sát</span>
+      </button>
+      <button class="tab-btn locked" data-tab="foxprofile" title="Quản lý profile antidetect">
+        <span class="tab-icon" id="lock-fox"></span>
+        <span>Tài khoản</span>
+      </button>
+      <button class="tab-btn locked" data-tab="n8n" title="Workflow Studio n8n">
+        <span class="tab-icon" id="lock-n8n"></span>
+        <span>n8n</span>
+      </button>
+    </nav>
+
+    <div class="spacer"></div>
+
+    <button class="user-btn locked" id="account-btn" aria-haspopup="menu" aria-expanded="false" aria-controls="account-menu">
+      <div class="avatar-sm" id="operator-avatar">?</div>
+      <span class="user-name" id="operator-name">Chưa đăng nhập</span>
+      <svg class="svg-ico chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+    </button>
+  </header>
+
+  <div class="scrim" id="scrim"></div>
+  <div class="menu" id="account-menu" role="menu" aria-label="Tài khoản">
+    <div class="menu-profile">
+      <div class="avatar-lg" id="menu-avatar-lg">?</div>
+      <div class="menu-profile-text">
+        <div class="menu-name" id="menu-name">Người vận hành</div>
+        <div class="menu-email" id="menu-email"></div>
+      </div>
+      <span class="role-badge" id="menu-role-badge">GUEST</span>
+    </div>
+
+    <div class="menu-sep"></div>
+
+    <button class="menu-item" id="menu-settings" role="menuitem">
+      <svg class="svg-ico" viewBox="0 0 24 24"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/><circle cx="8" cy="6" r="2"/><circle cx="16" cy="12" r="2"/><circle cx="10" cy="18" r="2"/></svg>
+      <span>Quản trị trạm</span>
+      <span class="menu-kbd">Ctrl+4</span>
+    </button>
+
+    <div class="theme-row">
+      <svg class="svg-ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3v18"/><path d="M12 7h5M12 11h7M12 15h6"/></svg>
+      <span>Giao diện</span>
+      <div class="theme-seg" role="group" aria-label="Chế độ giao diện">
+        <button data-theme-set="light" aria-pressed="false">
+          <svg class="svg-ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>Sáng
+        </button>
+        <button data-theme-set="dark" aria-pressed="true">
+          <svg class="svg-ico" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>Tối
+        </button>
+      </div>
+    </div>
+
+    <div id="menu-auth-tail">
+      <div class="menu-sep"></div>
+      <button class="menu-item danger" id="menu-logout" role="menuitem">
+        <svg class="svg-ico" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
+        <span>Đăng xuất</span>
+      </button>
+    </div>
+    <p class="menu-note" id="menu-note">Đăng nhập từ màn hình Giám sát để mở quyền quản trị.</p>
+  </div>
+
+  <script>
+    const ICONS = {
+      dashboard: '<svg class="svg-ico" viewBox="0 0 24 24"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>',
+      foxprofile: '<svg class="svg-ico" viewBox="0 0 24 24"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg>',
+      n8n: '<svg class="svg-ico" viewBox="0 0 24 24"><rect width="6" height="6" x="3" y="3" rx="1"/><rect width="6" height="6" x="15" y="15" rx="1"/><path d="M9 6h4a2 2 0 0 1 2 2v7"/></svg>',
+      lock: '<svg class="svg-ico" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>',
+    };
+
+    document.querySelector('[data-icon="dashboard"]').innerHTML = ICONS.dashboard;
+
+    const $ = (id) => document.getElementById(id);
+    const tabsEl = $('tabs');
+    const accountBtn = $('account-btn');
+    const menuEl = $('account-menu');
+    const settingsItem = $('menu-settings');
+    let menuOpen = false;
+
+    function setMenuOpen(open) {
+      if (open === menuOpen) return;
+      menuOpen = open;
+      document.body.classList.toggle('menu-open', open);
+      accountBtn.setAttribute('aria-expanded', String(open));
+      window.cyberwatchShell.setMenuOpen(open);
+      if (open) {
+        const first = menuEl.querySelector('button:not(:disabled)');
+        if (first) first.focus();
+      } else {
+        accountBtn.focus();
+      }
+    }
+
+    function applyTheme(theme) {
+      const t = theme === 'light' ? 'light' : 'dark';
+      document.documentElement.dataset.theme = t;
+      document.querySelectorAll('[data-theme-set]').forEach((b) => {
+        b.setAttribute('aria-pressed', String(b.dataset.themeSet === t));
+      });
+    }
+
+    function render(state) {
+      if (!state) return;
+      const auth = state.auth || {};
+      const isAuthed = Boolean(auth.authenticated);
+      const isAdmin = isAuthed && auth.role === 'admin';
+      const rescueSettings = Boolean(state.foxprofile && !state.foxprofile.online && state.allowRescueSettings);
+
+      applyTheme(state.theme);
+
+      document.querySelectorAll('.tab-btn').forEach((btn) => {
+        const id = btn.dataset.tab;
+        const unlocked = id === 'dashboard' || isAdmin;
+        btn.classList.toggle('active', state.activeTab === id);
+        btn.classList.toggle('locked', !unlocked);
+        const lockSpan = btn.querySelector('[id^="lock-"]');
+        if (lockSpan) lockSpan.innerHTML = unlocked ? ICONS[id] : ICONS.lock;
+      });
+
+      const email = auth.email || '';
+      const displayName = auth.fullName || email || 'Chưa xác thực';
+      const initial = (isAuthed ? displayName.charAt(0) : '?').toUpperCase();
+
+      accountBtn.classList.toggle('locked', !isAuthed);
+      $('operator-avatar').textContent = initial;
+      // Bar shows the short role; full name + email live in the menu and the button title
+      $('operator-name').textContent = isAuthed ? (isAdmin ? 'Quản trị viên' : 'Cán bộ') : 'Chưa đăng nhập';
+      accountBtn.title = isAuthed ? `${displayName} (${email})` : 'Chưa xác thực';
+
+      $('menu-avatar-lg').textContent = initial;
+      $('menu-name').textContent = isAuthed ? displayName : 'Chưa đăng nhập';
+      $('menu-email').textContent = isAuthed ? (email || 'Tài khoản nội bộ') : 'Phiên làm việc hạn chế';
+      $('menu-role-badge').textContent = isAuthed ? (isAdmin ? 'ADMIN' : 'USER') : 'GUEST';
+
+      settingsItem.disabled = !(isAdmin || rescueSettings);
+      settingsItem.title = settingsItem.disabled ? 'Chỉ tài khoản Admin' : 'Cấu hình, kiểm thử webhook, nhật ký';
+      $('menu-auth-tail').style.display = isAuthed ? '' : 'none';
+      $('menu-note').style.display = isAuthed ? 'none' : '';
+    }
+
+    tabsEl.addEventListener('click', (e) => {
+      const btn = e.target.closest('.tab-btn');
+      if (!btn || btn.classList.contains('locked')) return;
+      window.cyberwatchShell.switchTab(btn.dataset.tab);
+    });
+
+    accountBtn.addEventListener('click', () => setMenuOpen(!menuOpen));
+    $('scrim').addEventListener('mousedown', () => setMenuOpen(false));
+    window.addEventListener('blur', () => setMenuOpen(false));
+
+    document.addEventListener('keydown', (e) => {
+      if (!menuOpen) return;
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setMenuOpen(false);
+        return;
+      }
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        const items = [...menuEl.querySelectorAll('button:not(:disabled)')].filter((b) => b.offsetParent);
+        const i = items.indexOf(document.activeElement);
+        const next = e.key === 'ArrowDown' ? i + 1 : i - 1;
+        items[(next + items.length) % items.length].focus();
+      }
+    });
+
+    settingsItem.addEventListener('click', () => {
+      setMenuOpen(false);
+      window.cyberwatchShell.switchTab('settings');
+    });
+
+    document.querySelectorAll('[data-theme-set]').forEach((b) => {
+      b.addEventListener('click', () => {
+        applyTheme(b.dataset.themeSet);
+        window.cyberwatchShell.setTheme(b.dataset.themeSet);
+      });
+    });
+
+    $('menu-logout').addEventListener('click', () => {
+      setMenuOpen(false);
+      window.cyberwatchShell.logout();
+    });
+
+    window.cyberwatchShell.getState().then(render);
+    window.cyberwatchShell.onStateUpdate(render);
+  </script>
+</body>
+</html>
