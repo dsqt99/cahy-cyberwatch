@@ -2,28 +2,20 @@
 // Eliminates Chromium SingletonLock / GPUCache stderr collisions when an instance
 // is already running in the background or Windows System Tray.
 const { spawn, execSync } = require('child_process');
-const fs = require('fs');
 const path = require('path');
+const { loadConfig } = require('../config');
 
-const CONFIG_PATH = path.join(__dirname, 'config.json');
+const ROOT_DIR = path.resolve(__dirname, '..', '..');
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function readPorts() {
-  let disk = {};
-  if (fs.existsSync(CONFIG_PATH)) {
-    try {
-      disk = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
-    } catch {
-      // use defaults
-    }
-  }
+  const cfg = loadConfig(ROOT_DIR);
   return {
-    host: disk.webhookHost || '127.0.0.1',
-    webhookPort: Number(disk.webhookPort) || 5680,
-    dashboardPort: Number(disk.dashboardPort) || 5690,
+    host: cfg.webhookHost || '127.0.0.1',
+    webhookPort: Number(cfg.webhookPort) || 5680,
+    dashboardPort: Number(cfg.dashboardPort) || 5690,
   };
 }
-
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function probeRunningInstance(baseUrl) {
   try {
@@ -55,9 +47,7 @@ async function stopExistingInstance(baseUrl, webhookPort) {
       body: '{}',
       signal: AbortSignal.timeout(1500),
     });
-    if (!res.ok) {
-      forceStopPortOwnerWin(webhookPort);
-    }
+    if (!res.ok) forceStopPortOwnerWin(webhookPort);
   } catch {
     forceStopPortOwnerWin(webhookPort);
   }
@@ -78,7 +68,7 @@ function launchElectron(extraArgs) {
   delete cleanEnv.ELECTRON_RUN_AS_NODE;
 
   const child = spawn(electronBinary, ['.', ...extraArgs], {
-    cwd: __dirname,
+    cwd: ROOT_DIR,
     stdio: 'inherit',
     env: cleanEnv,
   });
@@ -113,7 +103,7 @@ async function main() {
           });
           if (focusRes.ok) {
             console.log(
-              `[CAHY CyberWatch] Ứng dụng đang hoạt động sẵn (Dashboard http://127.0.0.1:${dashboardPort} | Webhook :${webhookPort}).`
+              `[CAHY CyberWatch] Ứng dụng đang hoạt động sẵn (Dashboard http://127.0.0.1:${dashboardPort} | Webhook :${webhookPort}).`,
             );
             console.log('[CAHY CyberWatch] Đã mở cửa sổ ứng dụng lên trên cùng màn hình và làm mới giao diện.');
             console.log('[CAHY CyberWatch] Gợi ý: Chạy "npm run restart" nếu muốn khởi động lại toàn bộ tiến trình.');
@@ -135,4 +125,3 @@ main().catch((err) => {
   console.error('[CAHY CyberWatch] Lỗi khởi chạy:', err.message);
   process.exit(1);
 });
-

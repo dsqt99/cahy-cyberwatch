@@ -3,8 +3,8 @@ const assert = require('node:assert');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { handle, exportFbCookie, resolveProfileId, outputPath, getStats, resetStats } = require('./capture');
-const { createWebhookServer, refreshFbCredential } = require('./server');
+const { handle, exportFbCookie, resolveProfileId, outputPath, getStats, resetStats } = require('../src/capture');
+const { createWebhookServer, refreshFbCredential } = require('../src/server');
 
 const realFetch = global.fetch;
 const rect = { x: 10, y: -5, sx: 0, sy: 400, w: 600, h: 3000, vw: 1920, vh: 1080, d: 2 };
@@ -320,5 +320,130 @@ test('fb-login open retries navigate, finish stops then saves the session, statu
     assert.ok(!JSON.stringify(st).includes('secret_xs_token'));
   } finally {
     await new Promise((resolve) => srv.close(resolve));
+  }
+});
+
+test('keep-alive reuses the browser across jobs and cookie export stops it first', async () => {
+  const { stopAllSessions } = require('../src/capture');
+  const calls = mockFetch();
+  const ka = { ...opts, keepAliveMs: 60000 };
+  await handle('fb', { ...body, profile_id: 'warm1' }, ka);
+  await handle('fb', { ...body, profile_id: 'warm1', url: 'https://www.facebook.com/9' }, ka);
+  assert.strictEqual(calls.filter((c) => c === 'POST /launch').length, 1);
+  assert.ok(!calls.includes('POST /stop'));
+  await exportFbCookie({ profile_id: 'warm1' }, { api: 'http://fox/api/v1' });
+  assert.ok(calls.indexOf('POST /stop') !== -1 && calls.indexOf('POST /stop') < calls.indexOf('GET /profiles/warm1/cookies'));
+  await stopAllSessions();
+});
+
+test('/api/desktop is loopback-only and webhookToken gates /webhook/*', async () => {
+  const srv = createWebhookServer({
+    getConfig: () => ({ foxprofilePort: 8010, foxprofileToken: '', webhookToken: 's3cret', screenshotDir: dir }),
+    crop: (png) => png,
+  });
+  await new Promise((resolve) => srv.listen(0, '127.0.0.1', resolve));
+  const base = `http://127.0.0.1:${srv.address().port}`;
+  mockFetch({ passthroughPort: srv.address().port });
+  try {
+    const noTok = await fetch(`${base}/webhook/export_fb_cookie`, { method: 'POST', body: '{}' });
+    assert.strictEqual(noTok.status, 401);
+    const withTok = await fetch(`${base}/webhook/export_fb_cookie`, { method: 'POST', headers: { authorization: 'Bearer s3cret', 'content-type': 'application/json' }, body: JSON.stringify({ profile_id: 'test-fb' }) });
+    assert.strictEqual(withTok.status, 200);
+    const health = await fetch(`${base}/webhook/health`);
+    assert.strictEqual(health.status, 200);
+    const desktop = await fetch(`${base}/api/desktop/logs`);
+    assert.notStrictEqual(desktop.status, 403); // loopback caller is allowed
+  } finally {
+    await new Promise((resolve) => srv.close(resolve));
+  }
+});
+
+test('detects Facebook login/checkpoint wall and fails with 401 without retrying', async () => {
+  const { setRetryDelay } = require('../src/capture');
+  setRetryDelay(5);
+  let evalCalls = 0;
+  const realFetchBackup = global.fetch;
+  const calls = [];
+  global.fetch = async (url, init = {}) => {
+    const p = new URL(String(url)).pathname.replace(/^.*\/browser\/[^/]+/, '');
+    calls.push(`${init.method || 'GET'} ${p}`);
+    if (p === '/page/evaluate') {
+      evalCalls++;
+      return { ok: true, status: 200, json: async () => ({ result: 'https://www.facebook.com/checkpoint/?next=123' }), text: async () => '{}' };
+    }
+    return { ok: true, status: 200, json: async () => ({ success: true }), text: async () => '{}' };
+  };
+  try {
+    await assert.rejects(
+      handle('fb', { url: 'https://www.facebook.com/post/1', profile_id: 'fb-wall' }, { ...opts, retries: 2 }),
+      /facebook_login_required/
+    );
+    assert.strictEqual(evalCalls, 1); // noRetry=true so only 1 attempt
+    assert.ok(calls.includes('POST /stop'));
+  } finally {
+    global.fetch = realFetchBackup;
+  }
+});
+
+test('retries transient capture failure and succeeds on second attempt', async () => {
+  const { setRetryDelay } = require('../src/capture');
+  setRetryDelay(5);
+  let navCount = 0;
+  const realFetchBackup = global.fetch;
+  global.fetch = async (url, init = {}) => {
+    const p = new URL(String(url)).pathname.replace(/^.*\/browser\/[^/]+/, '');
+    if (p === '/page/navigate' && ++navCount === 1) {
+      return { ok: false, status: 502, json: async () => ({ detail: 'temporary glitch' }), text: async () => '{}' };
+    }
+    if (p === '/page/evaluate') {
+      const parsed = init.body ? JSON.parse(init.body) : {};
+      if (parsed.script === 'location.href') {
+        return { ok: true, status: 200, json: async () => ({ result: 'https://www.facebook.com/ok' }), text: async () => '{}' };
+      }
+      return { ok: true, status: 200, json: async () => ({ result: rect }), text: async () => '{}' };
+    }
+    if (p === '/page/screenshot') {
+      return { ok: true, status: 200, json: async () => ({ png_base64: Buffer.from('png').toString('base64') }), text: async () => '{}' };
+    }
+    return { ok: true, status: 200, json: async () => ({ success: true }), text: async () => '{}' };
+  };
+  try {
+    const out = await handle('fb', { url: 'https://www.facebook.com/retry/1', profile_id: 'fb-retry' }, { ...opts, retries: 1 });
+    assert.strictEqual(navCount, 2);
+    assert.ok(out[0].outputFilePath[0].endsWith('post_facebook_1.png'));
+  } finally {
+    global.fetch = realFetchBackup;
+  }
+});
+
+test('maxConcurrent caps simultaneous browsers across different profiles', async () => {
+  let current = 0;
+  let peak = 0;
+  const realFetchBackup = global.fetch;
+  global.fetch = async (url, init = {}) => {
+    const p = new URL(String(url)).pathname.replace(/^.*\/browser\/[^/]+/, '');
+    if (p === '/launch') { current++; peak = Math.max(peak, current); }
+    if (p === '/stop') { current = Math.max(0, current - 1); }
+    if (p === '/page/navigate') await new Promise((r) => setTimeout(r, 40));
+    if (p === '/page/evaluate') {
+      const parsed = init.body ? JSON.parse(init.body) : {};
+      if (parsed.script === 'location.href') return { ok: true, status: 200, json: async () => ({ result: 'https://example.com' }), text: async () => '{}' };
+      return { ok: true, status: 200, json: async () => ({ result: rect }), text: async () => '{}' };
+    }
+    if (p === '/page/screenshot') {
+      return { ok: true, status: 200, json: async () => ({ png_base64: Buffer.from('png').toString('base64') }), text: async () => '{}' };
+    }
+    return { ok: true, status: 200, json: async () => ({ success: true }), text: async () => '{}' };
+  };
+  try {
+    await Promise.all([
+      handle('news', { url: 'https://example.com/1', profile_id: 'c1' }, { ...opts, maxConcurrent: 2 }),
+      handle('news', { url: 'https://example.com/2', profile_id: 'c2' }, { ...opts, maxConcurrent: 2 }),
+      handle('news', { url: 'https://example.com/3', profile_id: 'c3' }, { ...opts, maxConcurrent: 2 }),
+      handle('news', { url: 'https://example.com/4', profile_id: 'c4' }, { ...opts, maxConcurrent: 2 }),
+    ]);
+    assert.ok(peak <= 2, `peak concurrency was ${peak}, expected <= 2`);
+  } finally {
+    global.fetch = realFetchBackup;
   }
 });

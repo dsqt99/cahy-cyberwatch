@@ -17,5 +17,12 @@
   "fbCookieProfile": "",
   "fbCookieRefreshMinutes": 360,
   "fbSessionUserAgent": "",
+  "webhookToken": "",
+  "browserIdleSeconds": 120,
+  "screenshotRetentionDays": 0,
+  "captureRetries": 1,
+  "captureJitterMinSeconds": 2,
+  "captureJitterMaxSeconds": 6,
+  "maxConcurrentBrowsers": 3,
   "theme": "dark"
 }

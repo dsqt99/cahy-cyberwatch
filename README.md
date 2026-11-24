@@ -57,6 +57,12 @@
 | `n8nApiKey` | `""` | `X-N8N-API-KEY` từ n8n Settings > n8n API để bật/tắt workflows từ app |
 | `desktopOperatorPasscode` | `""` | Mã mở khóa quản trị viên máy trạm cục bộ (tùy chọn) |
 | `minimizeToTray` | `true` | Thu nhỏ xuống khay hệ thống khi đóng cửa sổ để giữ webhook chạy ngầm |
+| `webhookToken` | `""` | Nếu đặt: `/webhook/*` (trừ health) yêu cầu header `Authorization: Bearer <token>` hoặc `x-cahy-token`. Bắt buộc đặt khi `webhookHost` ≠ `127.0.0.1`. `/api/desktop/*` luôn chỉ cho loopback (hoặc kèm token) |
+| `browserIdleSeconds` | `120` | Giữ trình duyệt profile mở sẵn giữa các lần chụp để chụp hàng loạt nhanh hơn; `0` = đóng ngay sau mỗi ảnh. Tự đóng khi xuất cookie |
+| `screenshotRetentionDays` | `0` | Tự xóa ảnh bằng chứng cũ hơn N ngày (quét mỗi 24h); `0` = tắt, giữ vĩnh viễn |
+| `captureRetries` | `1` | Số lần thử lại khi chụp lỗi mạng/timeout (không retry lỗi auth wall hoặc 4xx) |
+| `captureJitterMinSeconds` / `MaxSeconds` | `2` / `6` | Khoảng nghỉ ngẫu nhiên giữa các lượt chụp liên tiếp trên cùng profile FB/TikTok |
+| `maxConcurrentBrowsers` | `3` | Giới hạn số trình duyệt chụp ảnh chạy song song tối đa trên toàn trạm (`0` = không giới hạn) |
 
 ---
 

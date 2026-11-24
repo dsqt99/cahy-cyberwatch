@@ -6,7 +6,8 @@ WORKDIR /app
 COPY package.json /app/package.json
 RUN npm install --omit=dev --no-audit --no-fund && chown -R node:node /app
 
-COPY server.js /app/server.js
+COPY server.js analytics.js /app/
+COPY src /app/src
 
 USER node
 EXPOSE 5434

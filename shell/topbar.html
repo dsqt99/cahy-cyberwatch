@@ -65,38 +65,63 @@
       background: var(--chrome);
       display: flex;
       align-items: center;
-      gap: 6px;
-      padding: 0 10px 0 19px;
+      gap: 10px;
+      padding: 0 14px 0 18px;
+      border-bottom: 1px solid var(--border);
     }
 
-    /* Brand zone = dashboard sidebar width (240px) so logo sits on the nav icon column and tabs on the content title line */
-    .brand { display: flex; align-items: center; gap: 9px; width: 221px; flex-shrink: 0; cursor: default; }
-    .brand-logo { width: 22px; height: 22px; object-fit: contain; }
-    .brand-title { font-size: 13px; font-weight: 700; letter-spacing: -0.01em; white-space: nowrap; }
+    /* Brand zone aligns cleanly with the 240px sidebar rail */
+    .brand {
+      display: flex; align-items: center; gap: 9px;
+      width: 212px; flex-shrink: 0; cursor: default;
+      padding-right: 12px;
+      border-right: 1px solid var(--border);
+    }
+    .brand-logo { width: 22px; height: 22px; object-fit: contain; flex-shrink: 0; }
+    .brand-title { font-size: 13px; font-weight: 700; letter-spacing: -0.015em; white-space: nowrap; }
     .brand-tag {
-      font-size: 10.5px; font-weight: 600;
-      color: var(--muted); padding: 1px 5px; border: 1px solid var(--border); border-radius: 4px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9.5px; font-weight: 600; letter-spacing: 0.04em;
+      color: var(--accent); background: var(--accent-soft);
+      padding: 2px 6px; border-radius: 999px;
     }
 
-
-    /* Workspace tabs: segmented track, active tab lifts to the canvas colour */
+    /* Workspace tabs: crisp segmented switcher with tactile active pill */
     .tabs {
-      display: flex; align-items: center; gap: 2px; margin-left: 26px; padding: 3px;
-      background: var(--hover); border-radius: 9px;
+      display: inline-flex; align-items: center; gap: 3px;
+      margin-left: 6px; padding: 3px;
+      background: color-mix(in srgb, var(--hover) 85%, transparent);
+      border: 1px solid var(--border);
+      border-radius: 10px;
     }
     .tab-btn {
-      height: 28px; padding: 0 12px; border-radius: 6px;
-      display: inline-flex; align-items: center; gap: 7px;
+      position: relative;
+      height: 28px; padding: 0 11px; border-radius: 7px;
+      display: inline-flex; align-items: center; gap: 6px;
       font-size: 12.5px; font-weight: 500; color: var(--muted); white-space: nowrap;
-      transition: background-color .2s cubic-bezier(0.32, 0.72, 0, 1), color .2s cubic-bezier(0.32, 0.72, 0, 1), box-shadow .2s cubic-bezier(0.32, 0.72, 0, 1);
+      transition: background-color .16s cubic-bezier(0.32, 0.72, 0, 1),
+                  color .16s cubic-bezier(0.32, 0.72, 0, 1),
+                  box-shadow .16s cubic-bezier(0.32, 0.72, 0, 1);
     }
-    .tab-btn:hover:not(.locked):not(.active) { color: var(--text); }
+    .tab-btn .svg-ico { width: 14px; height: 14px; }
+    .tab-btn:hover:not(.locked):not(.active) {
+      color: var(--text);
+      background: color-mix(in srgb, var(--canvas) 55%, transparent);
+    }
     .tab-btn.active {
-      background: var(--canvas); color: var(--text);
-      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.1);
+      background: var(--canvas); color: var(--text); font-weight: 600;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.14), 0 0 0 1px var(--border);
     }
     .tab-btn.active .svg-ico { color: var(--accent); }
-    .tab-btn.locked { opacity: 0.5; cursor: not-allowed; }
+    .tab-kbd {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9.5px; font-weight: 500;
+      color: var(--muted); opacity: 0.7;
+      margin-left: 1px;
+    }
+    .tab-btn.active .tab-kbd { opacity: 0.9; }
+    .tab-btn.locked { opacity: 0.48; cursor: not-allowed; }
+    .tab-btn.locked .tab-kbd { display: none; }
     @media (prefers-reduced-motion: reduce) { .tab-btn { transition: none; } }
 
     .spacer { flex: 1; min-width: 8px; }
@@ -164,9 +189,9 @@
     .theme-seg button[aria-pressed="true"] { background: var(--menu-bg); color: var(--text); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
     .menu-note { padding: 6px 8px 4px; font-size: 11px; line-height: 1.45; color: var(--muted); }
 
-    @media (max-width: 1100px) { .brand-tag { display: none; } }
+    @media (max-width: 1100px) { .brand-tag, .tab-kbd { display: none; } }
     /* Dashboard hides its sidebar below lg (1024px): drop the fixed brand zone too */
-    @media (max-width: 1023px) { .brand { width: auto; } .tabs { margin-left: 8px; } }
+    @media (max-width: 1023px) { .brand { width: auto; border-right: none; padding-right: 4px; } .tabs { margin-left: 4px; } }
     @media (max-width: 960px) { .user-name { max-width: 90px; } }
   </style>
 </head>
@@ -179,18 +204,21 @@
     </div>
 
 
-    <nav class="tabs" id="tabs" aria-label="Không gian làm việc">
-      <button class="tab-btn active" data-tab="dashboard" title="Giám sát & phân tích">
+    <nav class="tabs" id="tabs" role="tablist" aria-label="Không gian làm việc">
+      <button class="tab-btn active" role="tab" aria-selected="true" data-tab="dashboard" title="Giám sát & phân tích (Ctrl+1)">
         <span class="tab-icon" data-icon="dashboard"></span>
         <span>Giám sát</span>
+        <span class="tab-kbd">^1</span>
       </button>
-      <button class="tab-btn locked" data-tab="foxprofile" title="Quản lý profile antidetect">
+      <button class="tab-btn locked" role="tab" aria-selected="false" aria-disabled="true" data-tab="foxprofile" title="Quản lý profile antidetect (Ctrl+2)">
         <span class="tab-icon" id="lock-fox"></span>
         <span>Tài khoản</span>
+        <span class="tab-kbd">^2</span>
       </button>
-      <button class="tab-btn locked" data-tab="n8n" title="Workflow Studio n8n">
+      <button class="tab-btn locked" role="tab" aria-selected="false" aria-disabled="true" data-tab="n8n" title="Workflow Studio n8n (Ctrl+3)">
         <span class="tab-icon" id="lock-n8n"></span>
         <span>n8n</span>
+        <span class="tab-kbd">^3</span>
       </button>
     </nav>
 
@@ -296,8 +324,11 @@
       document.querySelectorAll('.tab-btn').forEach((btn) => {
         const id = btn.dataset.tab;
         const unlocked = id === 'dashboard' || isAdmin;
-        btn.classList.toggle('active', state.activeTab === id);
+        const isActive = state.activeTab === id;
+        btn.classList.toggle('active', isActive);
         btn.classList.toggle('locked', !unlocked);
+        btn.setAttribute('aria-selected', String(isActive));
+        btn.setAttribute('aria-disabled', String(!unlocked));
         const lockSpan = btn.querySelector('[id^="lock-"]');
         if (lockSpan) lockSpan.innerHTML = unlocked ? ICONS[id] : ICONS.lock;
       });
@@ -327,6 +358,18 @@
       const btn = e.target.closest('.tab-btn');
       if (!btn || btn.classList.contains('locked')) return;
       window.cyberwatchShell.switchTab(btn.dataset.tab);
+    });
+
+    tabsEl.addEventListener('keydown', (e) => {
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+      const unlocked = [...tabsEl.querySelectorAll('.tab-btn:not(.locked)')];
+      if (unlocked.length < 2) return;
+      e.preventDefault();
+      const i = unlocked.indexOf(document.activeElement);
+      const dir = e.key === 'ArrowRight' ? 1 : -1;
+      const next = unlocked[(i + dir + unlocked.length) % unlocked.length];
+      next.focus();
+      window.cyberwatchShell.switchTab(next.dataset.tab);
     });
 
     accountBtn.addEventListener('click', () => setMenuOpen(!menuOpen));

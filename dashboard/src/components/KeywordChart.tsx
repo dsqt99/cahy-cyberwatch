@@ -8,11 +8,12 @@ interface KeywordData {
 
 interface KeywordChartProps {
   data: KeywordData[];
+  onSelect?: (keyword: string) => void;
   width?: number;
   height?: number;
 }
 
-const KeywordChart: React.FC<KeywordChartProps> = ({ data }) => {
+const KeywordChart: React.FC<KeywordChartProps> = ({ data, onSelect }) => {
   if (!data || data.length === 0) {
     return (
       <div className="flex items-center justify-center h-56 text-xs text-muted-foreground border border-dashed border-border rounded-lg">
@@ -41,7 +42,7 @@ const KeywordChart: React.FC<KeywordChartProps> = ({ data }) => {
                 : "bg-primary/55";
 
         return (
-          <div key={`${item.keyword}-${index}`} className="group space-y-1.5">
+          <button type="button" onClick={() => onSelect?.(item.keyword)} key={`${item.keyword}-${index}`} className="group block w-full text-left space-y-1.5 rounded focus-visible:outline focus-visible:outline-primary">
             <div className="flex items-center justify-between gap-3 text-xs">
               <div className="flex items-center gap-2.5 min-w-0">
                 <span className="font-mono text-[11px] text-muted-foreground tabular-nums w-5 shrink-0">
@@ -57,7 +58,7 @@ const KeywordChart: React.FC<KeywordChartProps> = ({ data }) => {
               <div className="flex items-center gap-2.5 shrink-0 font-mono tabular-nums">
                 <span className="font-semibold text-foreground">{item.count}</span>
                 <span className="text-[11px] text-muted-foreground w-12 text-right">
-                  {sharePct}%
+                  lượt
                 </span>
               </div>
             </div>
@@ -67,7 +68,7 @@ const KeywordChart: React.FC<KeywordChartProps> = ({ data }) => {
                 style={{ width: `${widthPct}%` }}
               />
             </div>
-          </div>
+          </button>
         );
       })}
     </div>
